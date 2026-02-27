@@ -43,6 +43,10 @@ public extension Router {
         showAlert(option, title: title, subtitle: subtitle, buttons: buttons)
     }
     
+    func showErrorAlert(error: any Error, buttons: (@Sendable () -> AnyView)? = nil) {
+        showErrorAlert(error: error, buttons: buttons)
+    }
+    
     func showModal<T>(
         backgroundColor: Color = Color.black.opacity(0.6),
         backgroundTransition: AnyTransition = .opacity.animation(.smooth),
