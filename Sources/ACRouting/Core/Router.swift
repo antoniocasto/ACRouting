@@ -29,7 +29,7 @@ public protocol Router {
     
     func showModal<T>(
         backgroundColor: Color,
-        backgroundTransition: any Transition,
+        backgroundTransition: AnyTransition,
         animation: Animation,
         backgroundTapDismissesModal: Bool,
         screen: @escaping () -> T
@@ -45,7 +45,7 @@ extension Router {
     
     func showModal<T>(
         backgroundColor: Color = Color.black.opacity(0.6),
-        backgroundTransition: any Transition = .opacity.animation(.smooth),
+        backgroundTransition: AnyTransition = .opacity.animation(.smooth),
         animation: Animation = .easeInOut,
         backgroundTapDismissesModal: Bool = true,
         screen: @escaping () -> T
@@ -99,7 +99,7 @@ struct MockRouter: Router {
     
     func showModal<T>(
         backgroundColor: Color = Color.black.opacity(0.6),
-        backgroundTransition: any Transition = .opacity.animation(.smooth),
+        backgroundTransition: AnyTransition = .opacity.animation(.smooth),
         screen: @escaping () -> T
     ) where T : View {
         print("MockRouter does not work")

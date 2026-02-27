@@ -40,7 +40,7 @@ public struct RouterView<Content: View>: View, Router {
     @State private var showFullScreenCover: AnyDestination?
     @State private var modal: AnyDestination?
     @State private var modalBackgroundColor: Color = Color.black.opacity(0.6)
-    @State private var modalBackgroundTransition: any Transition = .opacity
+    @State private var modalBackgroundTransition: AnyTransition = .opacity
     @State private var modalBackgroundAnimation: Animation = .smooth
     @State private var modalBackgroundTapDismissesModal = true
     
@@ -176,7 +176,7 @@ public struct RouterView<Content: View>: View, Router {
     
     public func showModal<T>(
         backgroundColor: Color = Color.black.opacity(0.6),
-        backgroundTransition: any Transition = .opacity.animation(.smooth),
+        backgroundTransition: AnyTransition = .opacity.animation(.smooth),
         animation: Animation = .smooth,
         backgroundTapDismissesModal: Bool = true,
         screen: @escaping () -> T

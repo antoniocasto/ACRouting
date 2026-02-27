@@ -8,6 +8,7 @@
 import SwiftUI
 
 extension Binding where Value == Bool {
+    @MainActor
     init<T>(ifNotNil value: Binding<T?>) {
         self.init {
             value.wrappedValue != nil

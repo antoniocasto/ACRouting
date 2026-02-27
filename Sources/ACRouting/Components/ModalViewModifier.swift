@@ -12,7 +12,7 @@ private struct ModalViewModifier: ViewModifier {
     
     @Binding var modal: AnyDestination?
     let backgroundColor: Color
-    let backgroundTransition: any Transition
+    let backgroundTransition: AnyTransition
     let animation: Animation?
     let backgroundTapDismissesModal: Bool
     
@@ -27,7 +27,7 @@ private struct ModalViewModifier: ViewModifier {
                 backgroundColor
                     .ignoresSafeArea()
                     .zIndex(1)
-                    .transition(AnyTransition(backgroundTransition))
+                    .transition(backgroundTransition)
                     .onTapGesture {
                         if backgroundTapDismissesModal {
                             modal = nil
@@ -46,7 +46,7 @@ extension View {
     func modalViewModifier(
         modal: Binding<AnyDestination?>,
         backgroundColor: Color = Color.black.opacity(0.6),
-        backgroundTransition: any Transition = .opacity.animation(.smooth),
+        backgroundTransition: AnyTransition = .opacity.animation(.smooth),
         animation: Animation? = nil,
         backgroundTapDismissesModal: Bool = true
     ) -> some View {
