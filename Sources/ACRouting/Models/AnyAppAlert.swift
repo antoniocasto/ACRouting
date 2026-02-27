@@ -18,9 +18,10 @@ struct AnyAppAlert {
     }
 
     /// Alert initializer for errors
-    init(error: Error) {
+    init(error: Error, buttons: (@Sendable () -> AnyView)? = nil) {
         self.title = "Error"
         self.subtitle = error.localizedDescription
+        self.buttons = buttons
     }
 
     // MARK: - Properties

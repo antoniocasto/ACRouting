@@ -7,8 +7,8 @@
 
 import SwiftUI
 
-extension View {
-    func any() -> AnyView {
+public extension View {
+    nonisolated func any() -> AnyView {
         AnyView(self)
     }
 }

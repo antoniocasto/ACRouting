@@ -167,7 +167,7 @@ public struct RouterView<Content: View>: View, Router {
     
     public func showErrorAlert(error: any Error, buttons: (@Sendable () -> AnyView)? = nil) {
         alertOption = .alert
-        alert = AnyAppAlert(error: error)
+        alert = AnyAppAlert(error: error, buttons: buttons)
     }
     
     public func dismissAlert() {
