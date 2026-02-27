@@ -38,7 +38,7 @@ public protocol Router {
     func dismissModal()
 }
 
-extension Router {
+public extension Router {
     func showAlert(_ option: AlertType, title: String, subtitle: String? = nil, buttons: (@Sendable () -> AnyView)? = nil) {
         showAlert(option, title: title, subtitle: subtitle, buttons: buttons)
     }
