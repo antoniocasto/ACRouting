@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum SegueOption {
+public enum SegueOption {
     case push
     case sheet
     case fullScreenCover
@@ -15,7 +15,7 @@ enum SegueOption {
     /// `.sheet` and `.fullScreenCover` create a NEW navigation context.
     /// This means the presented root screen can push further screens without affecting
     /// the underlying stack.
-    var shouldAddNewNavigationView: Bool {
+    internal var shouldAddNewNavigationView: Bool {
         switch self {
         case .push:
             return false

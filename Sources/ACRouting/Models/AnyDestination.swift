@@ -13,12 +13,12 @@ import SwiftUI
 /// So we store:
 /// - a stable Hashable identity (UUID string)
 /// - the actual destination view, type-erased as AnyView
-struct AnyDestination: Hashable {
+public struct AnyDestination: Hashable {
     // MARK: - Initializer
     
     /// Wrap any SwiftUI view into AnyView
     @MainActor
-    init<T: View>(destination: T) {
+    public init<T: View>(destination: T) {
         self.destination = destination.any()
     }
     
@@ -35,11 +35,11 @@ struct AnyDestination: Hashable {
 
     /// Hash/Equatable are based only on `id`.
     /// This means identity is not derived from the view content.
-    func hash(into hasher: inout Hasher) {
+    public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
 
-    static func == (lhs: AnyDestination, rhs: AnyDestination) -> Bool {
+    public static func == (lhs: AnyDestination, rhs: AnyDestination) -> Bool {
         lhs.id == rhs.id
     }
 }

@@ -18,16 +18,12 @@ import SwiftUI
 /// - Because we want the next screen to keep having a `Router` available.
 /// - So the pushed/presented destination is actually `RouterView<DestinationView>`.
 /// 
-struct RouterView<Content: View>: View, Router {
+public struct RouterView<Content: View>: View, Router {
     // MARK: - Initializerr
 
     /// `screenStack` is optionally provided from a parent RouterView.
     /// If nil, we use a constant empty array (root case).
-    init(
-        screenStack: Binding<[AnyDestination]>? = nil,
-        addNavigationView: Bool = true,
-        content: @escaping (any Router) -> Content
-    ) {
+    public init(screenStack: Binding<[AnyDestination]>? = nil, addNavigationView: Bool = true, content: @escaping (any Router) -> Content) {
         self._screenStack = screenStack ?? .constant([])
         self.addNavigationView = addNavigationView
         self.content = content
@@ -79,7 +75,7 @@ struct RouterView<Content: View>: View, Router {
 
     // MARK: Body
 
-    var body: some View {
+    public var body: some View {
         // Root creates NavigationStack. Children may or may not, based on `addNavigationView`.
         NavigationStackIfNeeded(path: $path, addNavigationView: addNavigationView) {
             content(self)
@@ -100,10 +96,7 @@ struct RouterView<Content: View>: View, Router {
 
     // MARK: Router methods
 
-    func showScreen<T: View>(
-        _ option: SegueOption,
-        @ViewBuilder destination: @escaping (any Router) -> T
-    ) {
+    public func showScreen<T: View>(_ option: SegueOption, @ViewBuilder destination: @escaping (any Router) -> T) {
 
         // We always wrap the destination inside another RouterView.
         // Why?
@@ -163,25 +156,25 @@ struct RouterView<Content: View>: View, Router {
     /// The navigation state is therefore not fully "state-driven".
     /// If you need deterministic navigation (deep links, tests, sync with state),
     /// prefer implementing pop by mutating the arrays (e.g. `path.removeLast()`).
-    func dismissScreen() {
+    public func dismissScreen() {
         dismiss()
     }
     
-    func showAlert(_ option: AlertType, title: String, subtitle: String? = nil, buttons: (@Sendable () -> AnyView)? = nil) {
+    public func showAlert(_ option: AlertType, title: String, subtitle: String? = nil, buttons: (@Sendable () -> AnyView)? = nil) {
         alertOption = option
         alert = AnyAppAlert(title: title, subtitle: subtitle, buttons: buttons)
     }
     
-    func showErrorAlert(error: any Error, buttons: (@Sendable () -> AnyView)? = nil) {
+    public func showErrorAlert(error: any Error, buttons: (@Sendable () -> AnyView)? = nil) {
         alertOption = .alert
         alert = AnyAppAlert(error: error)
     }
     
-    func dismissAlert() {
+    public func dismissAlert() {
         alert = nil
     }
     
-    func showModal<T>(
+    public func showModal<T>(
         backgroundColor: Color = Color.black.opacity(0.6),
         backgroundTransition: any Transition = .opacity.animation(.smooth),
         animation: Animation = .smooth,
@@ -195,7 +188,7 @@ struct RouterView<Content: View>: View, Router {
         self.modal = AnyDestination(destination: screen())
     }
     
-    func dismissModal() {
+    public func dismissModal() {
         self.modal = nil
     }
 }

@@ -16,11 +16,9 @@ import SwiftUI
 /// The destination builder receives a router instance:
 /// each pushed/presented screen receives a router that will route to the correct stack/context.
 @MainActor
-protocol Router {
-    func showScreen<T: View>(
-        _ option: SegueOption,
-        @ViewBuilder destination: @escaping (any Router) -> T
-    )
+public protocol Router {
+    func showScreen<T: View>(_ option: SegueOption, @ViewBuilder destination: @escaping (any Router) -> T)
+    
     func dismissScreen()
     
     func showAlert(_ option: AlertType, title: String, subtitle: String?, buttons: (@Sendable () -> AnyView)?)

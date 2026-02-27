@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum AlertType {
+public enum AlertType {
     case alert
     case confirmationDialog
 }
