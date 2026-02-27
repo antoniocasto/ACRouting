@@ -63,7 +63,7 @@ extension Router {
 
 // MARK: - Router environment injection
 
-extension EnvironmentValues {
+public extension EnvironmentValues {
     /// ⚠️ NOTE ABOUT `@Entry` + default value:
     /// - The default `MockRouter()` is ONLY a fallback to avoid runtime crashes if a screen
     ///   is rendered outside a RouterView.
