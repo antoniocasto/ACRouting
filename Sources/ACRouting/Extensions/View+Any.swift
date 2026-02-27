@@ -8,8 +8,7 @@
 import SwiftUI
 
 public extension View {
-    @MainActor
-    func any() -> AnyView {
+    nonisolated func any() -> AnyView {
         AnyView(self)
     }
 }
