@@ -18,8 +18,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - xcode: "16.2"
-            ios: "18.2"
+          - xcode: "26.2"
+            ios: "26.2"
             simulator: "iPhone 16 Pro"
 
     steps:
