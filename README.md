@@ -33,7 +33,7 @@ Note: the current implementation uses APIs such as `NavigationStack` and
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/antoniocasto/ACRouting.git", branch: "develop")
+    .package(url: "https://github.com/antoniocasto/ACRouting.git", from: "1.1.0")
 ],
 targets: [
     .target(
@@ -219,6 +219,13 @@ router.dismissModal()
 swift build
 swift test
 ```
+
+## Credits
+
+This package was built while following the **SwiftUI Advanced Architectures** course by [Nick Sarno](https://github.com/SwiftfulThinking).
+
+- YouTube: [@SwiftfulThinking](https://www.youtube.com/@SwiftfulThinking)
+- Course: SwiftUI Advanced Architectures
 
 ## License
 
