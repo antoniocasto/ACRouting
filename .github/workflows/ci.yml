@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test (Xcode ${{ matrix.xcode }}, iOS ${{ matrix.ios }})
+    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - xcode: "26.2"
+            ios: "26.2"
+            simulator: "iPhone 16 Pro"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode }}.app
+
+      - name: Cache SPM
+        uses: actions/cache@v4
+        with:
+          path: |
+            .build
+            ~/Library/Developer/Xcode/DerivedData
+          key: spm-${{ runner.os }}-${{ matrix.xcode }}-${{ hashFiles('Package.resolved', 'Package.swift') }}
+          restore-keys: |
+            spm-${{ runner.os }}-${{ matrix.xcode }}-
+
+      - name: Resolve dependencies
+        run: xcodebuild -resolvePackageDependencies -scheme ACRouting -clonedSourcePackagesDirPath .build
+
+      - name: Build
+        run: |
+          xcodebuild build-for-testing \
+            -scheme ACRouting \
+            -destination "platform=iOS Simulator,name=${{ matrix.simulator }},OS=${{ matrix.ios }}" \
+            -clonedSourcePackagesDirPath .build \
+            | xcpretty --color && exit ${PIPESTATUS[0]}
+
+      - name: Test
+        run: |
+          xcodebuild test-without-building \
+            -scheme ACRouting \
+            -destination "platform=iOS Simulator,name=${{ matrix.simulator }},OS=${{ matrix.ios }}" \
+            -clonedSourcePackagesDirPath .build \
+            -resultBundlePath TestResults.xcresult \
+            | xcpretty --color && exit ${PIPESTATUS[0]}
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestResults-Xcode${{ matrix.xcode }}-iOS${{ matrix.ios }}
+          path: TestResults.xcresult
+          retention-days: 7
