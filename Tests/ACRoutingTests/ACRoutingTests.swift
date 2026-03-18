@@ -1,6 +1,5 @@
-import Testing
-@testable import ACRouting
-
-@Test func example() async throws {
-    // Write your test here and use APIs like `#expect(...)` to check expected conditions.
-}
+// Tests are organized in dedicated files:
+// - ModelTests.swift
+// - ExtensionTests.swift
+// - RouterProtocolTests.swift
+// - RouterViewIntegrationTests.swift
