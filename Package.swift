@@ -6,7 +6,7 @@ let package = Package(
     name: "ACRouting",
     platforms: [
         .iOS(.v16),
-        .macOS(.v10_15)
+        .macOS(.v13)
     ],
     products: [
         .library(
