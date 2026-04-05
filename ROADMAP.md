@@ -112,24 +112,56 @@ Navigation libraries are adopted through confidence and examples, not just throu
 
 ## Suggested Release Sequence
 
-### v1.2
+`1.3.0` already exists, so the next roadmap milestones should follow semver from there:
 
-- Fix platform metadata mismatch.
-- Add explicit pop APIs.
-- Add behavior-level tests for push and dismiss flows.
-- Document current routing rules more clearly.
+- Patch releases should stay limited to compatibility fixes, documentation corrections, and low-risk behavior fixes.
+- Minor releases should group additive navigation capabilities that do not require consumers to rewrite existing integrations.
+- A major release should be reserved for route model replacement, removal of current APIs, or other migration-heavy changes.
 
-### v1.3
+### v1.3.1
 
-- Introduce typed routes in an additive way.
+- Fix platform metadata mismatch and document the supported Apple platform matrix clearly.
+- Keep macOS compatibility shims aligned with the current public API surface.
+- Tighten documentation around the current routing model and modal behavior.
+
+Why this version:
+These are corrective changes to the existing `1.3.0` line, not new navigation capabilities.
+
+### v1.4.0
+
+- Add explicit pop APIs such as `pop()`, `popToRoot()`, and `popTo(count:)`.
+- Add behavior-level tests for push, dismiss, and mixed navigation flows.
+- Clarify current routing rules and stack ownership in public documentation.
+
+Why this version:
+This is additive functionality that improves reliability and ergonomics without forcing a migration.
+
+### v1.5.0
+
+- Introduce typed routes in an additive way alongside the current destination model.
 - Add route-to-view registration.
 - Add initial deep-link entry points.
 
-### v1.4
+Why this version:
+Typed routing is a meaningful new capability and deserves a minor release, but it can remain backward compatible if introduced alongside the current API.
+
+### v1.6.0
 
 - Add restoration support.
 - Expand modal coordination rules.
 - Publish a sample app with realistic navigation flows.
+
+Why this version:
+These are substantial additions to navigation behavior and adoption tooling, but they can still ship without breaking the existing API.
+
+### v2.0.0
+
+- Consider removing or de-emphasizing `AnyDestination` if typed routes become the primary model.
+- Consider revisiting `Router` method names and route construction APIs if the current shape becomes limiting.
+- Ship formal migration notes only when an existing integration must change.
+
+Why this version:
+Use a major release only when consumers need to adapt code, not just when features are important.
 
 ## Non-Goals for Now
 
