@@ -19,3 +19,6 @@ DerivedData/
 
 # Credentials
 .netrc
+
+# Local Codex planning artifacts
+.codex-plan.md

@@ -1,4 +1,12 @@
+<p align="center">
+  <img src="Assets/Brand/acrouting-logo.png" alt="ACRouting logo" width="180">
+</p>
+
 # ACRouting
+
+<p align="center">
+  SwiftUI-first routing package for predictable navigation flows.
+</p>
 
 `ACRouting` is a SwiftUI-first routing package built to keep navigation concerns
 out of feature views and centralize transitions behind a single `Router` API.
@@ -15,11 +23,14 @@ out of feature views and centralize transitions behind a single `Router` API.
 ## Platform and Tooling
 
 - Swift tools: `6.2`
-- iOS: `16+`
-- macOS target in manifest: `10.15`
+- Supported Apple platforms:
+  - iOS `16+`
+  - macOS `13+`
 
-Note: the current implementation uses APIs such as `NavigationStack` and
-`dismiss` that require newer macOS versions at compile time.
+Notes:
+- The package manifest matches the SwiftUI navigation APIs used by the current implementation.
+- `showScreen(.fullScreenCover)` uses the native full-screen presentation on iOS.
+- On macOS, SwiftUI does not expose `fullScreenCover`, so the package intentionally falls back to `.sheet` while keeping the same public API.
 
 ## Installation
 
@@ -33,7 +44,7 @@ Note: the current implementation uses APIs such as `NavigationStack` and
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/antoniocasto/ACRouting.git", from: "1.1.0")
+    .package(url: "https://github.com/antoniocasto/ACRouting.git", from: "1.3.0")
 ],
 targets: [
     .target(
@@ -146,11 +157,16 @@ Button("Close") {
 }
 ```
 
+Current behavior:
+- In a pushed destination, `dismissScreen()` asks SwiftUI to dismiss the current navigation context.
+- In a sheet or full-screen flow, it dismisses the presented modal context.
+- `1.3.x` does not yet expose explicit stack APIs such as `pop()` or `popToRoot()`.
+
 ## Routing Options
 
 - `.push`: appends to the current stack.
-- `.sheet`: presents a new modal navigation context.
-- `.fullScreenCover`: presents a fullscreen modal navigation context.
+- `.sheet`: presents a new modal navigation context with its own routed flow.
+- `.fullScreenCover`: presents a fullscreen modal navigation context on iOS and a sheet-backed equivalent on macOS.
 
 ## Alerts
 
@@ -212,6 +228,13 @@ router.dismissModal()
 - Push navigation uses a shared destination stack where appropriate.
 - Sheet/fullscreen routes create a fresh navigation context for the presented
   flow.
+
+## Current Routing Model
+
+- Navigation state is currently stored as `AnyDestination`, which wraps concrete SwiftUI views.
+- The package is designed to keep routing available across pushes and modal flows, not to model routes as typed values yet.
+- `dismissScreen()` currently relies on SwiftUI dismissal semantics rather than explicit stack mutation.
+- If a view reads `@Environment(\.router)` outside `RouterView`, the default fallback is a `MockRouter` that avoids crashes but does not perform real navigation.
 
 ## Development
 
