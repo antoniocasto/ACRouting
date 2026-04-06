@@ -1,4 +1,12 @@
+<p align="center">
+  <img src="Assets/Brand/acrouting-logo.png" alt="ACRouting logo" width="180">
+</p>
+
 # ACRouting
+
+<p align="center">
+  SwiftUI-first routing package for predictable navigation flows.
+</p>
 
 `ACRouting` is a SwiftUI-first routing package built to keep navigation concerns
 out of feature views and centralize transitions behind a single `Router` API.
