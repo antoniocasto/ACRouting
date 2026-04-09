@@ -22,3 +22,4 @@ DerivedData/
 
 # Local Codex planning artifacts
 .codex-plan.md
+.codex/
