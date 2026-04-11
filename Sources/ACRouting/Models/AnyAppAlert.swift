@@ -7,26 +7,35 @@
 
 import SwiftUI
 
+/// Stores the normalized data needed to build a SwiftUI alert or confirmation dialog.
+///
+/// The public router API still talks about `subtitle` and `buttons` for source compatibility,
+/// but this internal model uses the more direct `message` and `actions` terminology.
 struct AnyAppAlert {
     // MARK: - Initializers
 
-    /// Generic alert intializer
-    init(title: String, subtitle: String? = nil, buttons: (@Sendable () -> AnyView)? = nil) {
+    /// Creates an alert configuration from a title, optional message, and optional custom actions.
+    init(title: String, message: String? = nil, actions: (@Sendable () -> AnyView)? = nil) {
         self.title = title
-        self.subtitle = subtitle
-        self.buttons = buttons
+        self.message = message
+        self.actions = actions
     }
 
-    /// Alert initializer for errors
-    init(error: Error, buttons: (@Sendable () -> AnyView)? = nil) {
+    /// Creates an alert configuration from an error value.
+    init(error: Error, actions: (@Sendable () -> AnyView)? = nil) {
         self.title = "Error"
-        self.subtitle = error.localizedDescription
-        self.buttons = buttons
+        self.message = error.localizedDescription
+        self.actions = actions
     }
 
     // MARK: - Properties
 
+    /// The primary alert title.
     var title: String
-    var subtitle: String?
-    var buttons: (@Sendable () -> AnyView)?
+
+    /// Secondary text shown below the title.
+    var message: String?
+
+    /// Optional custom alert actions.
+    var actions: (@Sendable () -> AnyView)?
 }

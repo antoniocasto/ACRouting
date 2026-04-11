@@ -8,6 +8,7 @@
 import SwiftUI
 
 public extension View {
+    /// Type-erases the current view so heterogeneous routed destinations can share one collection.
     nonisolated func any() -> AnyView {
         AnyView(self)
     }

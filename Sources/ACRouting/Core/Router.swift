@@ -7,26 +7,72 @@
 
 import SwiftUI
 
-/// Navigation API exposed to screens.
+/// Navigation commands exposed to routed feature views.
 ///
-/// Key idea:
-/// - Screens never touch NavigationStack / sheets directly.
-/// - They only call `router.showScreen(...)` or `router.dismissScreen()`.
+/// The package keeps SwiftUI navigation state inside `RouterView`.
+/// Screens only receive a `Router` and issue navigation commands through this protocol.
 ///
-/// The destination builder receives a router instance:
-/// each pushed/presented screen receives a router that will route to the correct stack/context.
+/// Every destination builder receives another `Router` instance so pushed and presented
+/// views can keep routing without learning about the underlying stack implementation.
 @MainActor
 public protocol Router {
+    /// Presents a destination using the requested segue style.
+    ///
+    /// - Parameters:
+    ///   - option: The presentation style to use for the destination.
+    ///   - destination: A builder that creates the presented view and receives the router for that destination context.
     func showScreen<T: View>(_ option: SegueOption, @ViewBuilder destination: @escaping (any Router) -> T)
     
+    /// Dismisses the current presentation context.
+    ///
+    /// In pushed child flows this removes the current pushed destination from the inherited stack.
+    /// In root or modal contexts it delegates to SwiftUI dismissal.
     func dismissScreen()
+
+    /// Removes the top-most destination from the current push stack.
+    func pop()
+
+    /// Removes the given number of destinations from the current push stack.
+    ///
+    /// Non-positive counts are ignored. Counts larger than the current stack depth clamp to the available number of destinations.
+    ///
+    /// - Parameter count: The number of pushed destinations to remove.
+    func pop(count: Int)
+
+    /// Removes all pushed destinations from the current push stack.
+    func popToRoot()
     
+    /// Presents a standard alert or confirmation dialog.
+    ///
+    /// - Parameters:
+    ///   - option: The SwiftUI alert presentation style to use.
+    ///   - title: The alert title.
+    ///   - subtitle: Optional secondary message text shown below the title.
+    ///   - buttons: Optional custom action views rendered by SwiftUI.
     func showAlert(_ option: AlertType, title: String, subtitle: String?, buttons: (@Sendable () -> AnyView)?)
     
+    /// Presents an alert configured from an error value.
+    ///
+    /// - Parameters:
+    ///   - error: The error whose localized description becomes the alert message.
+    ///   - buttons: Optional custom action views rendered by SwiftUI.
     func showErrorAlert(error: any Error, buttons: (@Sendable () -> AnyView)?)
     
+    /// Dismisses the currently presented alert, if one exists.
     func dismissAlert()
     
+    /// Presents a custom overlay above the current routed context.
+    ///
+    /// Unlike `.sheet` and `.fullScreenCover`, this API is intended for lightweight overlays
+    /// such as custom alerts, blocking loaders, or bottom-sheet style presentations that should
+    /// stay inside the current routed context.
+    ///
+    /// - Parameters:
+    ///   - backgroundColor: The overlay background color.
+    ///   - backgroundTransition: The transition used for the overlay background.
+    ///   - animation: The animation applied when the overlay appears or disappears.
+    ///   - backgroundTapDismissesModal: Whether tapping the dimmed background dismisses the overlay.
+    ///   - screen: A builder that creates the overlay content.
     func showModal<T>(
         backgroundColor: Color,
         backgroundTransition: AnyTransition,
@@ -35,22 +81,31 @@ public protocol Router {
         screen: @escaping () -> T
     ) where T : View
     
+    /// Dismisses the custom overlay shown by `showModal`, if one exists.
     func dismissModal()
 }
 
 public extension Router {
+    /// Convenience wrapper for removing a single pushed destination.
+    func pop() {
+        pop(count: 1)
+    }
+
+    /// Convenience wrapper for presenting an alert without a subtitle or custom actions.
     func showAlert(_ option: AlertType, title: String, subtitle: String? = nil, buttons: (@Sendable () -> AnyView)? = nil) {
         showAlert(option, title: title, subtitle: subtitle, buttons: buttons)
     }
     
+    /// Convenience wrapper for presenting an error alert without custom actions.
     func showErrorAlert(error: any Error, buttons: (@Sendable () -> AnyView)? = nil) {
         showErrorAlert(error: error, buttons: buttons)
     }
     
+    /// Convenience wrapper for presenting a custom overlay with package defaults.
     func showModal<T>(
         backgroundColor: Color = Color.black.opacity(0.6),
         backgroundTransition: AnyTransition = .opacity.animation(.smooth),
-        animation: Animation = .easeInOut,
+        animation: Animation = .smooth,
         backgroundTapDismissesModal: Bool = true,
         screen: @escaping () -> T
     ) where T : View {
@@ -68,15 +123,15 @@ public extension Router {
 // MARK: - Router environment injection
 
 public extension EnvironmentValues {
-    /// ⚠️ NOTE ABOUT `@Entry` + default value:
-    /// - The default `MockRouter()` is ONLY a fallback to avoid runtime crashes if a screen
-    ///   is rendered outside a RouterView.
-    /// - In production you expect `.environment(\.router, self)` to always override this.
-    /// - If you see "MockRouter does not work" in console, it means the view is not inside RouterView.
+    /// The router available to views inside a `RouterView`.
+    ///
+    /// The default `MockRouter` prevents runtime crashes when a view is rendered outside a routed
+    /// context, for example in previews or isolated tests. Production code should expect a real
+    /// router injected by `RouterView`.
     @Entry var router: Router = MockRouter()
 }
 
-
+/// Fallback router used when a view reads `EnvironmentValues.router` outside `RouterView`.
 struct MockRouter: Router {
     func showScreen<T: View>(
         _ option: SegueOption,
@@ -86,6 +141,18 @@ struct MockRouter: Router {
     }
     
     func dismissScreen() {
+        print("MockRouter does not work")
+    }
+
+    func pop() {
+        print("MockRouter does not work")
+    }
+
+    func pop(count: Int) {
+        print("MockRouter does not work")
+    }
+
+    func popToRoot() {
         print("MockRouter does not work")
     }
     
@@ -104,6 +171,8 @@ struct MockRouter: Router {
     func showModal<T>(
         backgroundColor: Color = Color.black.opacity(0.6),
         backgroundTransition: AnyTransition = .opacity.animation(.smooth),
+        animation: Animation = .smooth,
+        backgroundTapDismissesModal: Bool = true,
         screen: @escaping () -> T
     ) where T : View {
         print("MockRouter does not work")

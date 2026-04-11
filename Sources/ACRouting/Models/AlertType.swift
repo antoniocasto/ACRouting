@@ -7,7 +7,10 @@
 
 import Foundation
 
+/// Supported SwiftUI alert presentation styles used by the router.
 public enum AlertType {
+    /// Presents a standard alert.
     case alert
+    /// Presents a confirmation dialog.
     case confirmationDialog
 }

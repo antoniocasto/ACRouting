@@ -8,27 +8,25 @@
 import SwiftUI
 
 extension View {
-    /// Presents a full screen modal whenever `screen != nil`.
-    /// It uses `Binding(ifNotNil:)` so that:
-    /// - presenting is driven by setting `screen = AnyDestination(...)`
-    /// - dismissing (including swipe-to-dismiss) sets `screen = nil`
-    /// - on macOS, the public API is preserved but the implementation falls back to `.sheet`
-    func fullScreenCoverViewModifier(screen: Binding<AnyDestination?>) -> some View {
+    /// Presents a full-screen routed destination whenever one is available.
+    ///
+    /// `Binding(ifNotNil:)` keeps the optional destination as the presentation source of truth.
+    /// On macOS, the public API is preserved while the implementation falls back to `.sheet`
+    /// because SwiftUI does not provide `fullScreenCover`.
+    func fullScreenCoverDestinationModifier(destination: Binding<AnyDestination?>) -> some View {
         #if os(macOS)
-        // SwiftUI does not provide fullScreenCover on macOS, so we use sheet
-        // to keep the API compileable and behaviorally close for desktop hosts.
-        self.sheet(isPresented: Binding(ifNotNil: screen)) {
+        self.sheet(isPresented: Binding(ifNotNil: destination)) {
             ZStack {
-                if let screen = screen.wrappedValue {
-                    screen.destination
+                if let destination = destination.wrappedValue {
+                    destination.view
                 }
             }
         }
         #else
-        self.fullScreenCover(isPresented: Binding(ifNotNil: screen)) {
+        self.fullScreenCover(isPresented: Binding(ifNotNil: destination)) {
             ZStack {
-                if let screen = screen.wrappedValue {
-                    screen.destination
+                if let destination = destination.wrappedValue {
+                    destination.view
                 }
             }
         }

@@ -44,7 +44,7 @@ Notes:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/antoniocasto/ACRouting.git", from: "1.3.0")
+    .package(url: "https://github.com/antoniocasto/ACRouting.git", from: "1.4.0")
 ],
 targets: [
     .target(
@@ -158,9 +158,28 @@ Button("Close") {
 ```
 
 Current behavior:
-- In a pushed destination, `dismissScreen()` asks SwiftUI to dismiss the current navigation context.
-- In a sheet or full-screen flow, it dismisses the presented modal context.
-- `1.3.x` does not yet expose explicit stack APIs such as `pop()` or `popToRoot()`.
+- In a pushed destination, `dismissScreen()` pops the current pushed screen from the inherited stack.
+- In a sheet or full-screen flow root, it dismisses the presented modal context.
+- For push flows, prefer the explicit stack APIs below when you want deterministic navigation control.
+- There is currently no dedicated `Router` API to dismiss an ancestor modal container from deep inside a pushed child flow.
+
+### 4) Control the push stack explicitly
+
+```swift
+@Environment(\.router) private var router
+
+Button("Back") {
+    router.pop()
+}
+
+Button("Pop two screens") {
+    router.pop(count: 2)
+}
+
+Button("Back to root") {
+    router.popToRoot()
+}
+```
 
 ## Routing Options
 
@@ -207,7 +226,7 @@ router.dismissAlert()
 router.showModal(
     backgroundColor: .black.opacity(0.5),
     backgroundTransition: .opacity,
-    animation: .easeInOut,
+    animation: .smooth,
     backgroundTapDismissesModal: true
 ) {
     MyCustomModalView()
@@ -219,6 +238,10 @@ Dismiss:
 ```swift
 router.dismissModal()
 ```
+
+Notes:
+- `showModal` is intended for lightweight overlay UI such as custom alerts, confirmation cards, or loading blockers.
+- Unlike `.sheet` and `.fullScreenCover`, it does not start a new routed flow.
 
 ## Architecture Notes
 
@@ -233,8 +256,24 @@ router.dismissModal()
 
 - Navigation state is currently stored as `AnyDestination`, which wraps concrete SwiftUI views.
 - The package is designed to keep routing available across pushes and modal flows, not to model routes as typed values yet.
-- `dismissScreen()` currently relies on SwiftUI dismissal semantics rather than explicit stack mutation.
+- Pushed child flows mutate an inherited destination stack explicitly through `pop()`, `pop(count:)`, and `popToRoot()`.
+- `dismissScreen()` remains available as a compatibility API and delegates to explicit pop behavior for pushed destinations.
+- Modal flow dismissal is currently scoped to the modal flow root; deep pushed children do not yet have a dedicated API to dismiss an ancestor modal container directly.
+- `showModal` keeps the current router context alive and should be read as an overlay API, not as another routed modal container.
 - If a view reads `@Environment(\.router)` outside `RouterView`, the default fallback is a `MockRouter` that avoids crashes but does not perform real navigation.
+
+## Internal Preview Catalog
+
+The package now includes a debug-only preview catalog for local exploration in Xcode:
+
+- File: [`Sources/ACRouting/Previews/ACRoutingPreviewCatalog.swift`](Sources/ACRouting/Previews/ACRoutingPreviewCatalog.swift)
+- Scope:
+  - explicit push-stack control
+  - sheet and full-screen modal roots
+  - alert and overlay semantics
+  - a realistic mixed checkout-style flow built only from currently supported APIs
+
+This catalog is meant for package contributors and local study after cloning the repository. It is not part of the public API surface.
 
 ## Development
 

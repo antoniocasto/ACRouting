@@ -8,15 +8,15 @@
 import SwiftUI
 
 extension View {
-    /// Presents a modal whenever `screen != nil`.
-    /// It uses `Binding(ifNotNil:)` so that:
-    /// - presenting is driven by setting `screen = AnyDestination(...)`
-    /// - dismissing (including swipe-to-dismiss) sets `screen = nil`
-    func sheetViewModifier(screen: Binding<AnyDestination?>) -> some View {
-        self.sheet(isPresented: Binding(ifNotNil: screen)) {
+    /// Presents a sheet whenever a routed destination is available.
+    ///
+    /// `Binding(ifNotNil:)` keeps the optional destination as the single source of truth:
+    /// assigning a destination presents the sheet, and any system dismissal clears it.
+    func sheetDestinationModifier(destination: Binding<AnyDestination?>) -> some View {
+        self.sheet(isPresented: Binding(ifNotNil: destination)) {
             ZStack {
-                if let screen = screen.wrappedValue {
-                    screen.destination
+                if let destination = destination.wrappedValue {
+                    destination.view
                 }
             }
         }
