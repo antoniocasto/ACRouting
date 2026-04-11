@@ -11,11 +11,31 @@ import SwiftUI
 //   2. Exercising every Router method through a RouterView instance to confirm
 //      the calls don't trap or fatalError.
 //   3. Where possible, verifying observable side effects (e.g. path mutation
-//      via the screenStack binding).
+//      via an inherited push stack binding).
 
 @Suite("RouterView integration")
 @MainActor
 struct RouterViewIntegrationTests {
+    final class StackBox {
+        var stack: [AnyDestination]
+
+        init(_ stack: [AnyDestination] = []) {
+            self.stack = stack
+        }
+    }
+
+    private func makeChildRouter(
+        stackBox: StackBox
+    ) -> RouterView<Text> {
+        let binding = Binding<[AnyDestination]>(
+            get: { stackBox.stack },
+            set: { stackBox.stack = $0 }
+        )
+
+        return RouterView(inheritedPushStack: binding) { _ in
+            Text("Child")
+        }
+    }
 
     // MARK: - Initialization
 
@@ -24,11 +44,11 @@ struct RouterViewIntegrationTests {
         let _ = RouterView { _ in Text("Root") }
     }
 
-    @Test("RouterView can be initialized with an external screenStack binding")
-    func initWithScreenStack() {
-        var stack: [AnyDestination] = []
-        let binding = Binding<[AnyDestination]>(get: { stack }, set: { stack = $0 })
-        let _ = RouterView(screenStack: binding, addNavigationView: false) { _ in
+    @Test("RouterView can be initialized with an inherited push stack")
+    func initWithInheritedPushStack() {
+        let stackBox = StackBox()
+        let binding = Binding<[AnyDestination]>(get: { stackBox.stack }, set: { stackBox.stack = $0 })
+        let _ = RouterView(inheritedPushStack: binding) { _ in
             Text("Child")
         }
     }
@@ -43,6 +63,29 @@ struct RouterViewIntegrationTests {
     func showScreenPush() {
         let router: any Router = RouterView { _ in Text("Root") }
         router.showScreen(.push) { _ in Text("Pushed") }
+    }
+
+    @Test("showScreen(.push) appends to an inherited stack even when it starts empty")
+    func showScreenPushMutatesInheritedStack() {
+        let stackBox = StackBox()
+        let router: any Router = makeChildRouter(stackBox: stackBox)
+
+        router.showScreen(.push) { _ in Text("Pushed") }
+
+        #expect(stackBox.stack.count == 1)
+    }
+
+    @Test("showScreen(.push) preserves the existing inherited push stack")
+    func showScreenPushPreservesExistingInheritedStack() {
+        let first = AnyDestination(destination: Text("First"))
+        let second = AnyDestination(destination: Text("Second"))
+        let stackBox = StackBox([first, second])
+        let router: any Router = makeChildRouter(stackBox: stackBox)
+
+        router.showScreen(.push) { _ in Text("Third") }
+
+        #expect(stackBox.stack.count == 3)
+        #expect(Array(stackBox.stack.prefix(2)) == [first, second])
     }
 
     @Test("showScreen(.sheet) is callable")
@@ -88,21 +131,113 @@ struct RouterViewIntegrationTests {
         router.dismissModal()
     }
 
-    // MARK: - SegueOption determines navigation context wrapping
+    @Test("dismissScreen pops the inherited push stack")
+    func dismissScreenPopsInheritedStack() {
+        let stackBox = StackBox([AnyDestination(destination: Text("First"))])
+        let router: any Router = makeChildRouter(stackBox: stackBox)
 
-    @Test("Push wraps destination without new NavigationStack")
-    func pushDoesNotAddNavigationView() {
-        #expect(SegueOption.push.shouldAddNewNavigationView == false)
+        router.dismissScreen()
+
+        #expect(stackBox.stack.isEmpty)
     }
 
-    @Test("Sheet wraps destination with new NavigationStack")
-    func sheetAddsNavigationView() {
-        #expect(SegueOption.sheet.shouldAddNewNavigationView == true)
+    @Test("dismissScreen removes only the top-most inherited destination")
+    func dismissScreenRemovesOnlyTopMostInheritedDestination() {
+        let first = AnyDestination(destination: Text("First"))
+        let second = AnyDestination(destination: Text("Second"))
+        let stackBox = StackBox([first, second])
+        let router: any Router = makeChildRouter(stackBox: stackBox)
+
+        router.dismissScreen()
+
+        #expect(stackBox.stack == [first])
     }
 
-    @Test("FullScreenCover wraps destination with new NavigationStack")
-    func fullScreenCoverAddsNavigationView() {
-        #expect(SegueOption.fullScreenCover.shouldAddNewNavigationView == true)
+    @Test("dismissScreen is a no-op when the inherited push stack is already empty")
+    func dismissScreenOnEmptyInheritedStackIsNoOp() {
+        let stackBox = StackBox()
+        let router: any Router = makeChildRouter(stackBox: stackBox)
+
+        router.dismissScreen()
+
+        #expect(stackBox.stack.isEmpty)
+    }
+
+    @Test("pop removes one screen from the inherited push stack")
+    func popRemovesOneScreen() {
+        let stackBox = StackBox([
+            AnyDestination(destination: Text("First")),
+            AnyDestination(destination: Text("Second"))
+        ])
+        let router: any Router = makeChildRouter(stackBox: stackBox)
+
+        router.pop()
+
+        #expect(stackBox.stack.count == 1)
+    }
+
+    @Test(arguments: [0, -1])
+    func popCountIgnoresNonPositiveRequests(_ count: Int) {
+        let stackBox = StackBox([AnyDestination(destination: Text("Only"))])
+        let router: any Router = makeChildRouter(stackBox: stackBox)
+
+        router.pop(count: count)
+
+        #expect(stackBox.stack.count == 1)
+    }
+
+    @Test("pop(count:) removes up to the requested number of screens")
+    func popCountRemovesRequestedScreens() {
+        let stackBox = StackBox([
+            AnyDestination(destination: Text("First")),
+            AnyDestination(destination: Text("Second")),
+            AnyDestination(destination: Text("Third"))
+        ])
+        let router: any Router = makeChildRouter(stackBox: stackBox)
+
+        router.pop(count: 2)
+
+        #expect(stackBox.stack.count == 1)
+    }
+
+    @Test("pop(count:) clamps to the current stack depth")
+    func popCountClampsToStackDepth() {
+        let stackBox = StackBox([AnyDestination(destination: Text("Only"))])
+        let router: any Router = makeChildRouter(stackBox: stackBox)
+
+        router.pop(count: 5)
+
+        #expect(stackBox.stack.isEmpty)
+    }
+
+    @Test("popToRoot clears the inherited push stack")
+    func popToRootClearsInheritedStack() {
+        let stackBox = StackBox([
+            AnyDestination(destination: Text("First")),
+            AnyDestination(destination: Text("Second"))
+        ])
+        let router: any Router = makeChildRouter(stackBox: stackBox)
+
+        router.popToRoot()
+
+        #expect(stackBox.stack.isEmpty)
+    }
+
+    // MARK: - SegueOption determines navigation stack ownership
+
+    @Test("Push keeps the current routed navigation stack")
+    func pushKeepsCurrentNavigationStack() {
+        #expect(SegueOption.push.createsNewNavigationStack == false)
+    }
+
+    @Test("Sheet starts a fresh routed navigation stack")
+    func sheetStartsNewNavigationStack() {
+        #expect(SegueOption.sheet.createsNewNavigationStack == true)
+    }
+
+    @Test("FullScreenCover starts a fresh routed navigation stack")
+    func fullScreenCoverStartsNewNavigationStack() {
+        #expect(SegueOption.fullScreenCover.createsNewNavigationStack == true)
     }
 }
 

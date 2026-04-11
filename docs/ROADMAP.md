@@ -22,31 +22,23 @@ This roadmap is intended to be the default planning source for future Codex chat
 - A single `Router` abstraction keeps navigation concerns out of feature views.
 - `RouterView` re-wraps destinations so routing stays available across pushed and presented flows.
 - The package already covers the most common presentation styles: push, sheet, full screen, alert, and custom overlay modal.
+- Push navigation is now state-driven through explicit stack APIs: `pop()`, `pop(count:)`, and `popToRoot()`.
+- Inherited push-stack ownership is now explicit instead of being inferred from empty-stack heuristics.
+- The package now has behavior-level regression tests for push-stack mutation and protocol forwarding.
+- A debug-only preview catalog exists for local Xcode exploration of real package flows and current limits.
 
 ### Current gaps to address first
 
-- Push dismissal is not fully state-driven because `dismissScreen()` relies on SwiftUI dismissal semantics instead of explicit stack mutation.
-- Stack ownership is implicit and currently tied to heuristics such as `screenStack.isEmpty`, which makes behavior harder to reason about and harder to test.
 - Modal presentation state is fragmented across multiple slots instead of being modeled as a single normalized presentation state.
+- There is no dedicated API to dismiss an ancestor modal container from deep inside a pushed child flow.
 - Public API naming is workable, but symbols such as `showScreen` and `SegueOption` are not yet as fluent or Swift-native as they should be for a public package.
 - The current model leans on `AnyView` and `AnyDestination`, which keeps it flexible but blocks stronger typed flows for routes, deep links, and restoration.
-- Tests mostly validate callability and model basics rather than full navigation behavior across realistic flows.
+- Missing-router behavior is safe, but diagnostics are still lightweight and could do more than the current `MockRouter` fallback.
+- The test suite is much better than before, but mixed modal-plus-push behavior still needs broader coverage before typed routing arrives.
 
 ## Priorities
 
-### 1. Stabilize Deterministic Navigation State
-
-Priority: High
-
-- Make push navigation explicitly state-driven.
-- Introduce and standardize stack mutation operations such as `pop()`, `pop(count:)`, and `popToRoot()`.
-- Remove internal reliance on dismissal side effects for push flows.
-- Clarify root versus child stack ownership without depending on implicit empty-stack checks.
-
-Why it matters:
-Future work should build on explicit navigation state, not on view dismissal behavior. If stack mutation is deterministic first, later features can compose on top of a reliable core instead of reinterpreting legacy behavior.
-
-### 2. Normalize Modal and Presentation State
+### 1. Normalize Modal and Presentation State
 
 Priority: High
 
@@ -54,35 +46,37 @@ Priority: High
 - Document which modal layering combinations are supported and which are intentionally out of scope.
 - Move future presentation APIs toward enum-driven or item-driven modeling rather than parallel presentation slots.
 - Keep macOS behavior aligned with the public API while documenting any platform-specific fallback rules.
+- Decide whether ancestor modal dismissal should be introduced as an additive API or documented as intentionally unsupported through `v1.x`.
 
 Why it matters:
-The package already supports several presentation styles, but their lifecycle rules are still implicit. A normalized presentation model reduces hidden coupling and makes modal behavior easier to evolve, test, and document.
+The package already has a deterministic push stack, but modal semantics are still spread across separate storage slots and implicit container rules. Typed routing and deeper flow reconstruction should build on a normalized presentation model rather than on parallel ad hoc state.
 
-### 3. Expand Behavior-Level Test Coverage
+### 2. Expand Behavior-Level Test Coverage
 
 Priority: High
 
-- Add tests that verify stack and presentation state transitions, not just method callability.
-- Cover mixed flows that combine push and modal transitions.
+- Add tests that verify mixed push-plus-modal flows, not just pure push behavior.
+- Cover the current limits explicitly so unsupported behavior is documented and protected from accidental drift.
 - Require each feature-bearing release to ship its own behavior tests.
 - Add parity tests whenever a new API is introduced alongside a legacy one.
 
 Why it matters:
-Navigation regressions are usually behavioral, not syntactic. If tests only prove that methods are callable, the package can still drift into inconsistent runtime behavior without the suite catching it.
+Navigation regressions are usually behavioral, not syntactic. The current suite is much stronger than before, but modal interaction rules still need more coverage before more feature families are layered on top.
 
-### 4. Improve Public API Ergonomics and Documentation
+### 3. Improve Public API Ergonomics and Documentation
 
 Priority: High
 
 - Refine future public APIs toward fluent Swift call sites, role-based labels, and concise documentation comments.
 - Keep both router access styles first-class: environment injection and explicit passing.
 - Add preview-safe diagnostics and clearer guidance for missing router injection.
+- Keep the local preview catalog aligned with current behavior rather than aspirational flows.
 - Publish examples that demonstrate intended usage patterns instead of relying on implementation details.
 
 Why it matters:
-For a public package, ergonomics and documentation are part of the product surface. Future features should be introduced in a way that reads naturally in SwiftUI code and does not require consumers to infer behavior from the source.
+For a public package, ergonomics and documentation are part of the product surface. The package now has a better internal study aid, but public docs and diagnostics still need to close the gap between implementation details and intended usage.
 
-### 5. Introduce Typed Push Routing
+### 4. Introduce Typed Push Routing
 
 Priority: Medium
 
@@ -93,7 +87,7 @@ Priority: Medium
 Why it matters:
 Typed push routing is the first meaningful step away from a view-erased navigation core. It should arrive only after deterministic state and better tests exist, so its semantics are built on stable behavior.
 
-### 6. Introduce Typed Modal Routing
+### 5. Introduce Typed Modal Routing
 
 Priority: Medium
 
@@ -104,7 +98,7 @@ Priority: Medium
 Why it matters:
 Push routing and modal routing have different lifecycle rules. Splitting them into separate milestones keeps the implementation smaller, the public API clearer, and the migration path easier to test.
 
-### 7. Add Deep-Link Entry Points
+### 6. Add Deep-Link Entry Points
 
 Priority: Medium
 
@@ -115,7 +109,7 @@ Priority: Medium
 Why it matters:
 Deep-link support should consume typed routing, not bypass it. Once typed routes exist, deep links can be implemented as another way to build navigation state rather than as a separate navigation model.
 
-### 8. Add Restoration
+### 7. Add Restoration
 
 Priority: Medium
 
@@ -126,7 +120,7 @@ Priority: Medium
 Why it matters:
 Restoration depends on deterministic, typed state. It should arrive only after the route model and modal coordination rules are stable enough to serialize and rebuild safely.
 
-### 9. Keep Platform Metadata, SemVer Guidance, and Examples Aligned
+### 8. Keep Platform Metadata, SemVer Guidance, and Examples Aligned
 
 Priority: Continuous
 
@@ -143,6 +137,17 @@ Drift between docs, metadata, and behavior creates adoption risk. Keeping these 
 - Minor releases are for additive public capabilities that expand the routing surface without forcing migration.
 - `v2.0.0` is reserved for cleanup that removes or de-emphasizes legacy APIs after additive replacements exist and are documented.
 
+## Planned Design Checkpoints
+
+The following milestones should not be treated as "implement immediately" items when reached. They each require a short design pass first, because the implementation direction is not fully locked yet.
+
+- `v1.4.2`: modal semantics, ancestor modal dismissal, and supported modal layering rules.
+- `v1.5.0`: typed push route modeling, route registration, and coexistence with the legacy builder API.
+- `v1.6.0`: typed modal route modeling and coordination between modal state and an already-pushed stack.
+- `v1.7.0`: deep-link resolver inputs, failure behavior, and stack construction rules.
+- `v1.9.0`: restoration serialization format, compatibility rules, and scope boundaries.
+- `v2.0.0`: migration strategy, naming cleanup, and legacy API de-emphasis timing.
+
 ## Suggested Release Sequence
 
 ### v1.3.1
@@ -154,28 +159,12 @@ Drift between docs, metadata, and behavior creates adoption risk. Keeping these 
 Why this version:
 This release aligns documentation with reality so later work has a clean baseline.
 
-### v1.3.2
-
-- Internal deterministic push state cleanup only.
-- Remove reliance on dismissal semantics for stack mutation where possible.
-- Do not add new public navigation-control APIs yet.
-
-Why this version:
-This is internal hardening and should land before any public stack-control API is introduced.
-
-### v1.3.3
-
-- Internal modal state normalization only.
-- Define supported sheet, full-screen, and overlay rules.
-- Add behavior tests for modal lifecycle without introducing typed route concepts yet.
-
-Why this version:
-This keeps modal cleanup separate from push cleanup and avoids combining two internal rewrites into one release.
-
 ### v1.4.0
 
 - First public navigation-control release.
 - Add additive stack APIs such as `pop()`, `pop(count:)`, and `popToRoot()`.
+- Make inherited push-stack mutation deterministic and explicit.
+- Ship behavior tests that lock down the new push-state semantics.
 - Keep `dismissScreen()` supported, but document that explicit stack APIs are preferred for push flows.
 
 Why this version:
@@ -183,27 +172,39 @@ This is the first release that should expose new public navigation-control APIs.
 
 ### v1.4.1
 
-- Docs-and-diagnostics patch.
-- Add public documentation comments.
-- Improve missing-router diagnostics and tighten README examples.
+- Docs-and-examples patch.
+- Add public documentation comments and tighten README examples.
+- Add and maintain a local preview catalog that shows only currently supported flows.
+- Keep roadmap, changelog, and package guidance aligned with the branch reality.
 
 Why this version:
-Once the first explicit stack APIs ship, the package needs better guidance and better failure messages before adding another feature family.
+Once the first explicit stack APIs ship, the package needs stronger study material and better documentation before another feature family is added.
 
 ### v1.4.2
 
-- Examples-and-adoption patch.
-- Add sample flows.
-- Document when to use environment injection versus explicit router passing, including child view model usage.
+- Modal semantics hardening patch.
+- Clarify supported modal combinations and current limits.
+- Decide whether ancestor modal dismissal needs an additive API in `v1.x`.
+- Expand mixed-flow regression coverage only.
+
+Needs deeper design before implementation:
+- whether ancestor modal dismissal becomes a new additive API or remains intentionally unsupported in `v1.x`
+- which modal layering combinations are first-class and which stay explicitly out of scope
+- whether overlay presentation participates in future normalized presentation state or remains a separate overlay-only mechanism
 
 Why this version:
-This keeps adoption guidance separate from feature work and gives future Codex sessions a stable reference point.
+This keeps modal semantics cleanup separate from typed-routing work and gives the package a cleaner base for later route typing.
 
 ### v1.5.0
 
 - Typed push routing release.
 - Introduce additive typed push routes and route-to-view registration for pushed destinations.
 - Keep legacy destination-builder APIs supported.
+
+Needs deeper design before implementation:
+- the route model shape, including associated data and hashing requirements
+- how route-to-view registration is declared and scoped
+- how typed push routing coexists with legacy destination builders during `v1.x`
 
 Why this version:
 Typed push routing is the first new public routing family and should be isolated in its own minor release.
@@ -223,6 +224,11 @@ Typed push routing needs one stabilization pass before the package grows into ty
 - Extend typed routing to sheet, full-screen, and overlay presentation state.
 - Keep modal routing additive alongside legacy presentation APIs.
 
+Needs deeper design before implementation:
+- whether sheet, full-screen, and overlay routes share one presentation enum or remain separated
+- how typed modal state coordinates with an already-active push stack
+- whether overlay routing should stay lightweight or join the typed modal model fully
+
 Why this version:
 Typed modal routing is a distinct capability with different lifecycle rules and deserves its own release.
 
@@ -239,6 +245,11 @@ This protects the package from stacking another large feature on top of fresh mo
 - Deep-link push release.
 - Add entry points to build push stacks from typed routes or URL payloads.
 - Document resolver behavior and supported failure cases.
+
+Needs deeper design before implementation:
+- how URLs or external payloads map to typed routes
+- what the resolver returns on partial or invalid input
+- whether deep-link reconstruction is all-or-nothing or can degrade to partial stacks
 
 Why this version:
 Deep-link push flows should build on typed push routing rather than inventing a parallel model.
@@ -274,6 +285,11 @@ This keeps flow-reconstruction hardening separate from restoration work.
 - Persist and rebuild typed stack and typed presentation state after relaunch.
 - Add round-trip restoration tests for supported flows.
 
+Needs deeper design before implementation:
+- what restoration payload format becomes the long-term compatibility boundary
+- how versioning and backward compatibility are handled for saved navigation state
+- whether restoration includes only routes and presentation state or also selected transient UI state
+
 Why this version:
 Restoration is only worth shipping once the route model and deep-link reconstruction paths are already stable.
 
@@ -284,18 +300,25 @@ Restoration is only worth shipping once the route model and deep-link reconstruc
 - Revisit naming such as `showScreen` and `SegueOption` only when the replacement API surface is complete and documented.
 - Ship formal migration guidance with any breaking cleanup.
 
+Needs deeper design before implementation:
+- what the migration path looks like for current package consumers
+- which naming changes are worth the source break and which should stay as compatibility shims
+- whether legacy APIs are removed entirely or kept as deprecated bridges for one more cycle
+
 Why this version:
 Breaking changes should happen only after the package has already proven an additive migration path through `v1.x`.
 
 ## Public API and Type Direction
 
 - `v1.4.0` is the first release allowed to add new public navigation-control APIs.
+- The current branch already uses explicit push-stack control as the baseline for future work.
 - Typed routing must arrive in two steps:
   - Push routes first in `v1.5.0`.
   - Modal and presentation routes second in `v1.6.0`.
 - No roadmap item before `v2.0.0` may require removing current APIs.
 - Future public APIs should favor fluent Swift call sites, role-based parameter labels, concise documentation comments, and additive migration paths.
 - Future presentation state should move toward enum-driven or item-driven SwiftUI modeling rather than parallel presentation slots.
+- Internal examples and previews should continue to demonstrate only flows that are truly supported by the current implementation.
 
 ## Test Strategy
 

@@ -16,25 +16,23 @@ import SwiftUI
 public struct AnyDestination: Hashable {
     // MARK: - Initializer
     
-    /// Wrap any SwiftUI view into AnyView
+    /// Wraps a SwiftUI destination view in a type-erased, hashable container.
     @MainActor
     public init<T: View>(destination: T) {
-        self.destination = destination.any()
+        self.view = destination.any()
     }
     
     // MARK: - Properties
     
-    /// We generate a unique id so every pushed screen is considered different,
-    /// even if it shows the same view type.
+    /// A unique identity so repeated presentations of the same view type remain distinct.
     let id = UUID().uuidString
 
-    /// Type-erased destination. Needed because `path` must store a single type.
-    var destination: AnyView
+    /// The stored destination view, type-erased so a single path can hold many view types.
+    var view: AnyView
     
     // MARK: - Methods
 
-    /// Hash/Equatable are based only on `id`.
-    /// This means identity is not derived from the view content.
+    /// Hash and equality are based only on `id`, not on the wrapped view value.
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }

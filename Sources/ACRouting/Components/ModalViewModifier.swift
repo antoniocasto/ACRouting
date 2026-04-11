@@ -7,14 +7,18 @@
 
 import SwiftUI
 
-private struct ModalViewModifier: ViewModifier {
+/// Presents a lightweight overlay above the current routed context.
+///
+/// This modifier is intentionally separate from SwiftUI sheet APIs: it keeps the
+/// current routed context alive and simply layers additional UI above it.
+private struct OverlayPresentationModifier: ViewModifier {
     // MARK: - Properties
     
-    @Binding var modal: AnyDestination?
+    @Binding var destination: AnyDestination?
     let backgroundColor: Color
     let backgroundTransition: AnyTransition
     let animation: Animation?
-    let backgroundTapDismissesModal: Bool
+    let tapDismissesOverlay: Bool
     
     // MARK: - Methods
     
@@ -23,41 +27,42 @@ private struct ModalViewModifier: ViewModifier {
             content
                 .zIndex(0)
             
-            if let modalContent = modal?.destination {
+            if let overlayContent = destination?.view {
                 backgroundColor
                     .ignoresSafeArea()
                     .zIndex(1)
                     .transition(backgroundTransition)
                     .onTapGesture {
-                        if backgroundTapDismissesModal {
-                            modal = nil
+                        if tapDismissesOverlay {
+                            destination = nil
                         }
                     }
                 
-                modalContent
+                overlayContent
                     .zIndex(2)
             }
         }
-        .animation(animation, value: modal)
+        .animation(animation, value: destination)
     }
 }
 
 extension View {
-    func modalViewModifier(
-        modal: Binding<AnyDestination?>,
+    /// Presents a lightweight overlay above the current routed content.
+    func overlayPresentationModifier(
+        destination: Binding<AnyDestination?>,
         backgroundColor: Color = Color.black.opacity(0.6),
         backgroundTransition: AnyTransition = .opacity.animation(.smooth),
         animation: Animation? = nil,
-        backgroundTapDismissesModal: Bool = true
+        tapDismissesOverlay: Bool = true
     ) -> some View {
         self
             .modifier(
-                ModalViewModifier(
-                    modal: modal,
+                OverlayPresentationModifier(
+                    destination: destination,
                     backgroundColor: backgroundColor,
                     backgroundTransition: backgroundTransition,
                     animation: animation,
-                    backgroundTapDismissesModal: backgroundTapDismissesModal
+                    tapDismissesOverlay: tapDismissesOverlay
                 )
             )
     }

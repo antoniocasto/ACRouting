@@ -7,25 +7,42 @@
 
 import SwiftUI
 
-/// A View that also implements `Router`.
+/// A SwiftUI container that owns routing state and exposes it through `Router`.
 ///
-/// Behavior:
-/// - The root RouterView owns the NavigationStack + its `path` state.
-/// - Child RouterViews may create a NEW NavigationStack (for modals) or no stack at all (for push),
-///   but they still act as a Router and can push onto the correct stack via bindings.
+/// `RouterView` is the package's routing runtime:
+/// - root and modal router views own a local navigation stack;
+/// - pushed child router views inherit the ancestor push stack binding;
+/// - every presented destination is wrapped in another `RouterView` so routing stays available throughout the flow.
 ///
-/// Why a child RouterView exists at all?
-/// - Because we want the next screen to keep having a `Router` available.
-/// - So the pushed/presented destination is actually `RouterView<DestinationView>`.
-/// 
+/// This design keeps feature views independent from raw SwiftUI navigation state while still allowing deterministic stack mutation.
 public struct RouterView<Content: View>: View, Router {
-    // MARK: - Initializerr
+    // MARK: Initialization
 
-    /// `screenStack` is optionally provided from a parent RouterView.
-    /// If nil, we use a constant empty array (root case).
-    public init(screenStack: Binding<[AnyDestination]>? = nil, addNavigationView: Bool = true, content: @escaping (any Router) -> Content) {
-        self._screenStack = screenStack ?? .constant([])
-        self.addNavigationView = addNavigationView
+    /// Creates a router view that owns its own navigation context.
+    ///
+    /// Use this initializer for:
+    /// - the root `RouterView` in your app or feature flow;
+    /// - modal flow roots created by the package.
+    ///
+    /// - Parameter content: A view builder that receives the current router.
+    public init(@ViewBuilder content: @escaping (any Router) -> Content) {
+        self._inheritedPushStack = .constant([])
+        self.usesInheritedPushStack = false
+        self.ownsNavigationStack = true
+        self.content = content
+    }
+
+    /// Creates a router view that inherits push state from an ancestor router.
+    ///
+    /// Use this initializer only for pushed child router views that should mutate an existing push stack.
+    ///
+    /// - Parameters:
+    ///   - inheritedPushStack: A mutable push stack inherited from an ancestor router.
+    ///   - content: A view builder that receives the current router.
+    init(inheritedPushStack: Binding<[AnyDestination]>, @ViewBuilder content: @escaping (any Router) -> Content) {
+        self._inheritedPushStack = inheritedPushStack
+        self.usesInheritedPushStack = true
+        self.ownsNavigationStack = false
         self.content = content
     }
 
@@ -33,42 +50,45 @@ public struct RouterView<Content: View>: View, Router {
 
     @Environment(\.dismiss) private var dismiss
 
-    /// Modal destinations.
-    /// These are optional because a modal can show at most one screen at a time.
-    /// Setting them to `nil` dismisses the modal.
-    @State private var showSheet: AnyDestination?
-    @State private var showFullScreenCover: AnyDestination?
-    @State private var modal: AnyDestination?
-    @State private var modalBackgroundColor: Color = Color.black.opacity(0.6)
-    @State private var modalBackgroundTransition: AnyTransition = .opacity
-    @State private var modalBackgroundAnimation: Animation = .smooth
-    @State private var modalBackgroundTapDismissesModal = true
+    /// Routed destinations presented by SwiftUI modal APIs.
+    @State private var sheetDestination: AnyDestination?
+    @State private var fullScreenCoverDestination: AnyDestination?
+
+    /// Custom overlay destination presented above the current routed context.
+    @State private var overlayDestination: AnyDestination?
+    @State private var overlayBackgroundColor: Color = Color.black.opacity(0.6)
+    @State private var overlayBackgroundTransition: AnyTransition = .opacity
+    @State private var overlayAnimation: Animation = .smooth
+    @State private var overlayTapDismisses = true
     
-    @State private var alert: AnyAppAlert?
-    @State private var alertOption = AlertType.alert
+    /// The currently presented SwiftUI alert configuration.
+    @State private var activeAlert: AnyAppAlert?
+    @State private var activeAlertType = AlertType.alert
 
-    /// `path` is the "source of truth" for push navigation WHEN this RouterView owns a NavigationStack.
+    /// `pushPath` is the source of truth for push navigation when this router owns a `NavigationStack`.
     /// In practice:
-    /// - Root RouterView -> `path` drives the NavigationStack.
-    /// - Child RouterViews -> `path` is unused if they don't create a NavigationStack.
-    @State private var path: [AnyDestination] = []
+    /// - root and modal router views drive their own `NavigationStack` with this path;
+    /// - pushed child router views ignore this local path and mutate `inheritedPushStack` instead.
+    @State private var pushPath: [AnyDestination] = []
 
-    /// `screenStack` is a binding to a stack owned by an ancestor RouterView.
+    /// `inheritedPushStack` is a binding to a stack owned by an ancestor RouterView.
     /// This is what allows a pushed screen (wrapped in a child RouterView) to keep pushing
     /// onto the SAME root stack without creating nested NavigationStacks.
     ///
     /// Root case:
-    /// - screenStack is `.constant([])` and will stay empty.
+    /// - inheritedPushStack is `.constant([])` and will stay empty.
     ///
     /// Child case:
-    /// - screenStack is bound to the root `path` (or another shared stack),
+    /// - inheritedPushStack is bound to the root `path` (or another shared stack),
     ///   so pushes happen on that shared array.
-    @Binding private var screenStack: [AnyDestination]
+    @Binding private var inheritedPushStack: [AnyDestination]
 
-    /// Controls whether this RouterView creates a NavigationStack.
-    /// Root: true. Children for push: false (to avoid nested NavigationStacks).
-    /// Modals usually: true (new navigation context inside the modal).
-    private let addNavigationView: Bool
+    /// Tracks whether push mutations should target the parent binding or the local stack.
+    /// This avoids inferring ownership from the current stack contents.
+    private let usesInheritedPushStack: Bool
+
+    /// Indicates whether this router owns a local `NavigationStack`.
+    private let ownsNavigationStack: Bool
 
     /// Content builder. The root content receives `self` as the Router.
     @ViewBuilder private var content: (any Router) -> Content
@@ -76,104 +96,116 @@ public struct RouterView<Content: View>: View, Router {
     // MARK: Body
 
     public var body: some View {
-        // Root creates NavigationStack. Children may or may not, based on `addNavigationView`.
-        NavigationStackIfNeeded(path: $path, addNavigationView: addNavigationView) {
+        NavigationStackIfNeeded(pushPath: $pushPath, ownsNavigationStack: ownsNavigationStack) {
             content(self)
-                .sheetViewModifier(screen: $showSheet)
-                .fullScreenCoverViewModifier(screen: $showFullScreenCover)
-                .showAlert($alert, type: alertOption)
+                .sheetDestinationModifier(destination: $sheetDestination)
+                .fullScreenCoverDestinationModifier(destination: $fullScreenCoverDestination)
+                .routerAlertModifier($activeAlert, type: activeAlertType)
         }
-        .modalViewModifier(
-            modal: $modal,
-            backgroundColor: modalBackgroundColor,
-            backgroundTransition: modalBackgroundTransition,
-            animation: modalBackgroundAnimation,
-            backgroundTapDismissesModal: modalBackgroundTapDismissesModal
+        .overlayPresentationModifier(
+            destination: $overlayDestination,
+            backgroundColor: overlayBackgroundColor,
+            backgroundTransition: overlayBackgroundTransition,
+            animation: overlayAnimation,
+            tapDismissesOverlay: overlayTapDismisses
         )
-        // Make the Router available down the view tree.
         .environment(\.router, self)
     }
 
     // MARK: Router methods
 
+    /// Wraps the destination in another router view and presents it using the requested segue style.
+    ///
+    /// Push presentations inherit the current push stack so nested screens keep mutating the
+    /// same navigation state. Modal presentations start a fresh routed flow with their own
+    /// local navigation stack.
     public func showScreen<T: View>(_ option: SegueOption, @ViewBuilder destination: @escaping (any Router) -> T) {
-
-        // We always wrap the destination inside another RouterView.
-        // Why?
-        // - So the pushed/presented screen can keep using the Router API.
-        // - That child RouterView will NOT necessarily create a NavigationStack.
-        //
-        // Stack binding decision:
-        // - If `screenStack` is empty => we are the root router => bind to local `path`.
-        // - Else => we are already inside a routed flow => propagate the existing binding,
-        //   so every push keeps writing to the SAME root stack.
-        //
-        // NavigationStack creation decision:
-        // - `.push` uses `shouldAddNewNavigationView == false`
-        //   because the root stack already exists.
-        // - `.sheet` / `.fullScreenCover` use `true`
-        //   because modals are typically a NEW navigation context (fresh stack inside the modal).
-        let wrappedScreen = RouterView<T>(
-            screenStack: option.shouldAddNewNavigationView ? nil : ($screenStack.isEmpty ? $path : $screenStack),
-            addNavigationView: option.shouldAddNewNavigationView
-        ) { newRouter in
-            // The pushed/presented view receives `newRouter`.
-            // When that view calls showScreen(), it will append to the correct stack binding.
-            destination(newRouter)
-        }
-
-        // ⚠️ IMPORTANT:
-        // `destination` here is NOT the raw screen (SettingsView/AccountView).
-        // It is a `RouterView<T>` wrapping that screen.
-        // The actual type stored is therefore `AnyDestination(RouterView<T>)`.
-        let destination = AnyDestination(destination: wrappedScreen)
+        let wrappedScreen: RouterView<T>
 
         switch option {
         case .push:
-            // Decide where to append:
-            // - If `screenStack` is empty, this is the root router => append to local `path` (NavigationStack path)
-            // - Otherwise, append to the inherited stack binding (which ultimately points to root `path`)
-            if screenStack.isEmpty {
-                // Root router: path drives the NavigationStack
-                path.append(destination)
-            } else {
-                // Child router: push into the shared stack
-                screenStack.append(destination)
+            wrappedScreen = RouterView<T>(inheritedPushStack: pushStackBinding) { newRouter in
+                destination(newRouter)
+            }
+        case .sheet, .fullScreenCover:
+            wrappedScreen = RouterView<T> { newRouter in
+                destination(newRouter)
+            }
+        }
+
+        let routedDestination = AnyDestination(destination: wrappedScreen)
+
+        switch option {
+        case .push:
+            mutatePushStack { stack in
+                stack.append(routedDestination)
             }
         case .sheet:
-            showSheet = destination
+            sheetDestination = routedDestination
         case .fullScreenCover:
-            showFullScreenCover = destination
+            fullScreenCoverDestination = routedDestination
         }
     }
 
-    /// Dismiss the current presentation context.
-    /// - If called inside a pushed NavigationStack destination, it typically pops.
-    /// - If called inside a sheet/fullScreenCover, it dismisses the modal.
+    /// Dismisses the current presentation context.
     ///
-    /// ⚠️ IMPORTANT LIMITATION:
-    /// This method does NOT explicitly mutate `path` / `screenStack`.
-    /// The navigation state is therefore not fully "state-driven".
-    /// If you need deterministic navigation (deep links, tests, sync with state),
-    /// prefer implementing pop by mutating the arrays (e.g. `path.removeLast()`).
+    /// In pushed child flows this removes the top-most pushed destination from the inherited
+    /// stack. In root or modal router views it delegates to SwiftUI dismissal.
     public func dismissScreen() {
-        dismiss()
+        if usesInheritedPushStack {
+            pop()
+        } else {
+            dismiss()
+        }
+    }
+
+    /// Removes the top-most destination from the active push stack.
+    public func pop() {
+        pop(count: 1)
+    }
+
+    /// Removes up to `count` destinations from the active push stack.
+    ///
+    /// Non-positive counts are ignored, and oversized counts clamp to the current stack depth.
+    public func pop(count: Int) {
+        guard count > 0 else { return }
+
+        mutatePushStack { stack in
+            guard !stack.isEmpty else { return }
+            let elementsToRemove = min(count, stack.count)
+            stack.removeLast(elementsToRemove)
+        }
+    }
+
+    /// Clears the active push stack, returning the current flow to its routed root.
+    public func popToRoot() {
+        mutatePushStack { stack in
+            stack.removeAll()
+        }
     }
     
+    /// Stores the data needed to present a standard alert or confirmation dialog.
     public func showAlert(_ option: AlertType, title: String, subtitle: String? = nil, buttons: (@Sendable () -> AnyView)? = nil) {
-        alertOption = option
-        alert = AnyAppAlert(title: title, subtitle: subtitle, buttons: buttons)
+        activeAlertType = option
+        activeAlert = AnyAppAlert(title: title, message: subtitle, actions: buttons)
     }
     
+    /// Stores the data needed to present an error alert using the error's localized description.
     public func showErrorAlert(error: any Error, buttons: (@Sendable () -> AnyView)? = nil) {
-        alertOption = .alert
-        alert = AnyAppAlert(error: error, buttons: buttons)
+        activeAlertType = .alert
+        activeAlert = AnyAppAlert(error: error, actions: buttons)
     }
     
+    /// Clears the currently presented alert configuration.
     public func dismissAlert() {
-        alert = nil
+        activeAlert = nil
     }
     
+    /// Stores the configuration for a custom overlay presented above the current routed context.
+    ///
+    /// Unlike `.sheet` and `.fullScreenCover`, this does not create a new routed flow.
+    /// The overlay keeps using the current router context, which makes it suitable for
+    /// lightweight UI such as custom alerts, confirmations, or loading states.
     public func showModal<T>(
         backgroundColor: Color = Color.black.opacity(0.6),
         backgroundTransition: AnyTransition = .opacity.animation(.smooth),
@@ -181,14 +213,39 @@ public struct RouterView<Content: View>: View, Router {
         backgroundTapDismissesModal: Bool = true,
         screen: @escaping () -> T
     ) where T : View {
-        self.modalBackgroundColor = backgroundColor
-        self.modalBackgroundTransition = backgroundTransition
-        self.modalBackgroundAnimation = animation
-        self.modalBackgroundTapDismissesModal = backgroundTapDismissesModal
-        self.modal = AnyDestination(destination: screen())
+        overlayBackgroundColor = backgroundColor
+        overlayBackgroundTransition = backgroundTransition
+        overlayAnimation = animation
+        overlayTapDismisses = backgroundTapDismissesModal
+        overlayDestination = AnyDestination(destination: screen())
     }
     
+    /// Clears the currently presented overlay configuration.
     public func dismissModal() {
-        self.modal = nil
+        overlayDestination = nil
+    }
+
+    /// Returns the binding that should receive push mutations in the current routed context.
+    private var pushStackBinding: Binding<[AnyDestination]> {
+        usesInheritedPushStack ? $inheritedPushStack : $pushPath
+    }
+
+    /// Applies a mutation to the active push stack and verifies inherited stack writes in debug builds.
+    ///
+    /// The assertion documents an internal invariant: pushed child router views must receive
+    /// a mutable inherited binding, otherwise their stack mutations would be silently lost.
+    private func mutatePushStack(_ update: (inout [AnyDestination]) -> Void) {
+        let originalStack = pushStackBinding.wrappedValue
+        var updatedStack = originalStack
+        update(&updatedStack)
+        pushStackBinding.wrappedValue = updatedStack
+
+        guard usesInheritedPushStack, updatedStack != originalStack else { return }
+        let persistedStack = inheritedPushStack
+
+        assert(
+            persistedStack == updatedStack,
+            "RouterView(inheritedPushStack:) requires a mutable binding to an inherited push stack."
+        )
     }
 }
