@@ -137,6 +137,17 @@ Drift between docs, metadata, and behavior creates adoption risk. Keeping these 
 - Minor releases are for additive public capabilities that expand the routing surface without forcing migration.
 - `v2.0.0` is reserved for cleanup that removes or de-emphasizes legacy APIs after additive replacements exist and are documented.
 
+## Planned Design Checkpoints
+
+The following milestones should not be treated as "implement immediately" items when reached. They each require a short design pass first, because the implementation direction is not fully locked yet.
+
+- `v1.4.2`: modal semantics, ancestor modal dismissal, and supported modal layering rules.
+- `v1.5.0`: typed push route modeling, route registration, and coexistence with the legacy builder API.
+- `v1.6.0`: typed modal route modeling and coordination between modal state and an already-pushed stack.
+- `v1.7.0`: deep-link resolver inputs, failure behavior, and stack construction rules.
+- `v1.9.0`: restoration serialization format, compatibility rules, and scope boundaries.
+- `v2.0.0`: migration strategy, naming cleanup, and legacy API de-emphasis timing.
+
 ## Suggested Release Sequence
 
 ### v1.3.1
@@ -176,6 +187,11 @@ Once the first explicit stack APIs ship, the package needs stronger study materi
 - Decide whether ancestor modal dismissal needs an additive API in `v1.x`.
 - Expand mixed-flow regression coverage only.
 
+Needs deeper design before implementation:
+- whether ancestor modal dismissal becomes a new additive API or remains intentionally unsupported in `v1.x`
+- which modal layering combinations are first-class and which stay explicitly out of scope
+- whether overlay presentation participates in future normalized presentation state or remains a separate overlay-only mechanism
+
 Why this version:
 This keeps modal semantics cleanup separate from typed-routing work and gives the package a cleaner base for later route typing.
 
@@ -184,6 +200,11 @@ This keeps modal semantics cleanup separate from typed-routing work and gives th
 - Typed push routing release.
 - Introduce additive typed push routes and route-to-view registration for pushed destinations.
 - Keep legacy destination-builder APIs supported.
+
+Needs deeper design before implementation:
+- the route model shape, including associated data and hashing requirements
+- how route-to-view registration is declared and scoped
+- how typed push routing coexists with legacy destination builders during `v1.x`
 
 Why this version:
 Typed push routing is the first new public routing family and should be isolated in its own minor release.
@@ -203,6 +224,11 @@ Typed push routing needs one stabilization pass before the package grows into ty
 - Extend typed routing to sheet, full-screen, and overlay presentation state.
 - Keep modal routing additive alongside legacy presentation APIs.
 
+Needs deeper design before implementation:
+- whether sheet, full-screen, and overlay routes share one presentation enum or remain separated
+- how typed modal state coordinates with an already-active push stack
+- whether overlay routing should stay lightweight or join the typed modal model fully
+
 Why this version:
 Typed modal routing is a distinct capability with different lifecycle rules and deserves its own release.
 
@@ -219,6 +245,11 @@ This protects the package from stacking another large feature on top of fresh mo
 - Deep-link push release.
 - Add entry points to build push stacks from typed routes or URL payloads.
 - Document resolver behavior and supported failure cases.
+
+Needs deeper design before implementation:
+- how URLs or external payloads map to typed routes
+- what the resolver returns on partial or invalid input
+- whether deep-link reconstruction is all-or-nothing or can degrade to partial stacks
 
 Why this version:
 Deep-link push flows should build on typed push routing rather than inventing a parallel model.
@@ -254,6 +285,11 @@ This keeps flow-reconstruction hardening separate from restoration work.
 - Persist and rebuild typed stack and typed presentation state after relaunch.
 - Add round-trip restoration tests for supported flows.
 
+Needs deeper design before implementation:
+- what restoration payload format becomes the long-term compatibility boundary
+- how versioning and backward compatibility are handled for saved navigation state
+- whether restoration includes only routes and presentation state or also selected transient UI state
+
 Why this version:
 Restoration is only worth shipping once the route model and deep-link reconstruction paths are already stable.
 
@@ -263,6 +299,11 @@ Restoration is only worth shipping once the route model and deep-link reconstruc
 - Remove or de-emphasize legacy `AnyDestination`-first surfaces only if `v1.x` additive APIs fully cover migration.
 - Revisit naming such as `showScreen` and `SegueOption` only when the replacement API surface is complete and documented.
 - Ship formal migration guidance with any breaking cleanup.
+
+Needs deeper design before implementation:
+- what the migration path looks like for current package consumers
+- which naming changes are worth the source break and which should stay as compatibility shims
+- whether legacy APIs are removed entirely or kept as deprecated bridges for one more cycle
 
 Why this version:
 Breaking changes should happen only after the package has already proven an additive migration path through `v1.x`.
