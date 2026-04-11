@@ -60,8 +60,8 @@ struct AnyDestinationTests {
     @Test("Stores an AnyView destination")
     func storesDestination() {
         let destination = AnyDestination(destination: Text("Content"))
-        // destination.destination is typed as AnyView — compile-time guarantee.
-        let _: AnyView = destination.destination
+        // `view` is intentionally type-erased so mixed destinations can share one path.
+        let _: AnyView = destination.view
     }
 }
 
@@ -75,29 +75,29 @@ struct AnyAppAlertTests {
         let alert = AnyAppAlert(title: "Warning")
 
         #expect(alert.title == "Warning")
-        #expect(alert.subtitle == nil)
-        #expect(alert.buttons == nil)
+        #expect(alert.message == nil)
+        #expect(alert.actions == nil)
     }
 
     @Test("Init with title and subtitle")
     func initWithTitleAndSubtitle() {
-        let alert = AnyAppAlert(title: "Info", subtitle: "Details here")
+        let alert = AnyAppAlert(title: "Info", message: "Details here")
 
         #expect(alert.title == "Info")
-        #expect(alert.subtitle == "Details here")
+        #expect(alert.message == "Details here")
     }
 
     @Test("Init with title, subtitle, and buttons")
     func initWithAllParams() {
         let alert = AnyAppAlert(
             title: "Confirm",
-            subtitle: "Are you sure?",
-            buttons: { AnyView(EmptyView()) }
+            message: "Are you sure?",
+            actions: { AnyView(EmptyView()) }
         )
 
         #expect(alert.title == "Confirm")
-        #expect(alert.subtitle == "Are you sure?")
-        #expect(alert.buttons != nil)
+        #expect(alert.message == "Are you sure?")
+        #expect(alert.actions != nil)
     }
 
     @Test("Init from error sets title to Error")
@@ -108,17 +108,17 @@ struct AnyAppAlertTests {
         let alert = AnyAppAlert(error: error)
 
         #expect(alert.title == "Error")
-        #expect(alert.subtitle == "Something broke")
-        #expect(alert.buttons == nil)
+        #expect(alert.message == "Something broke")
+        #expect(alert.actions == nil)
     }
 
     @Test("Init from error with custom buttons")
     func initFromErrorWithButtons() {
         let error = NSError(domain: "test", code: 1)
-        let alert = AnyAppAlert(error: error, buttons: { AnyView(EmptyView()) })
+        let alert = AnyAppAlert(error: error, actions: { AnyView(EmptyView()) })
 
         #expect(alert.title == "Error")
-        #expect(alert.buttons != nil)
+        #expect(alert.actions != nil)
     }
 }
 
@@ -127,19 +127,19 @@ struct AnyAppAlertTests {
 @Suite("SegueOption")
 struct SegueOptionTests {
 
-    @Test("Push does not add a new navigation view")
-    func pushNoNewNavigation() {
-        #expect(SegueOption.push.shouldAddNewNavigationView == false)
+    @Test("Push keeps the current navigation stack")
+    func pushKeepsCurrentNavigationStack() {
+        #expect(SegueOption.push.createsNewNavigationStack == false)
     }
 
-    @Test("Sheet adds a new navigation view")
-    func sheetNewNavigation() {
-        #expect(SegueOption.sheet.shouldAddNewNavigationView == true)
+    @Test("Sheet starts a new navigation stack")
+    func sheetStartsNewNavigationStack() {
+        #expect(SegueOption.sheet.createsNewNavigationStack == true)
     }
 
-    @Test("FullScreenCover adds a new navigation view")
-    func fullScreenCoverNewNavigation() {
-        #expect(SegueOption.fullScreenCover.shouldAddNewNavigationView == true)
+    @Test("FullScreenCover starts a new navigation stack")
+    func fullScreenCoverStartsNewNavigationStack() {
+        #expect(SegueOption.fullScreenCover.createsNewNavigationStack == true)
     }
 
     @Test("All three cases are distinct")

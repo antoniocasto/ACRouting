@@ -34,6 +34,9 @@ final class SpyRouter: Router {
 
     private(set) var showScreenCalls: [ShowScreenCall] = []
     private(set) var dismissScreenCallCount = 0
+    private(set) var popCallCount = 0
+    private(set) var popCountCalls: [Int] = []
+    private(set) var popToRootCallCount = 0
     private(set) var showAlertCalls: [ShowAlertCall] = []
     private(set) var showErrorAlertCalls: [ShowErrorAlertCall] = []
     private(set) var dismissAlertCallCount = 0
@@ -48,6 +51,19 @@ final class SpyRouter: Router {
 
     func dismissScreen() {
         dismissScreenCallCount += 1
+    }
+
+    func pop() {
+        popCallCount += 1
+        popCountCalls.append(1)
+    }
+
+    func pop(count: Int) {
+        popCountCalls.append(count)
+    }
+
+    func popToRoot() {
+        popToRootCallCount += 1
     }
 
     func showAlert(_ option: AlertType, title: String, subtitle: String?, buttons: (@Sendable () -> AnyView)?) {
@@ -86,6 +102,31 @@ final class SpyRouter: Router {
     func dismissModal() {
         dismissModalCallCount += 1
     }
+}
+
+/// A minimal router used to verify protocol extension forwarding behavior.
+///
+/// This type intentionally omits a custom `pop()` implementation so tests can
+/// exercise the default `Router.pop()` implementation from the protocol extension.
+@MainActor
+private final class DefaultPopForwardingRouter: Router {
+    private(set) var popCountCalls: [Int] = []
+
+    func showScreen<T: View>(_ option: SegueOption, @ViewBuilder destination: @escaping (any Router) -> T) {}
+    func dismissScreen() {}
+    func pop(count: Int) { popCountCalls.append(count) }
+    func popToRoot() {}
+    func showAlert(_ option: AlertType, title: String, subtitle: String?, buttons: (@Sendable () -> AnyView)?) {}
+    func showErrorAlert(error: any Error, buttons: (@Sendable () -> AnyView)?) {}
+    func dismissAlert() {}
+    func showModal<T>(
+        backgroundColor: Color,
+        backgroundTransition: AnyTransition,
+        animation: Animation,
+        backgroundTapDismissesModal: Bool,
+        screen: @escaping () -> T
+    ) where T : View {}
+    func dismissModal() {}
 }
 
 // MARK: - Router Protocol Default Parameter Tests
@@ -133,6 +174,7 @@ struct RouterProtocolDefaultsTests {
         spy.showModal { Text("Modal") }
 
         #expect(spy.showModalCalls.count == 1)
+        #expect(spy.showModalCalls[0].backgroundColor == Color.black.opacity(0.6))
         #expect(spy.showModalCalls[0].backgroundTapDismissesModal == true)
     }
 
@@ -149,6 +191,29 @@ struct RouterProtocolDefaultsTests {
         #expect(spy.showModalCalls.count == 1)
         #expect(spy.showModalCalls[0].backgroundColor == .red)
         #expect(spy.showModalCalls[0].backgroundTapDismissesModal == false)
+    }
+
+    @Test("showModal does not eagerly evaluate the overlay builder")
+    func showModalDoesNotEagerlyEvaluateScreenBuilder() {
+        let spy = SpyRouter()
+        var builderEvaluationCount = 0
+
+        spy.showModal {
+            builderEvaluationCount += 1
+            return Text("Modal")
+        }
+
+        #expect(spy.showModalCalls.count == 1)
+        #expect(builderEvaluationCount == 0)
+    }
+
+    @Test("pop() default implementation forwards to pop(count: 1)")
+    func popDefaultImplementationForwardsToSingleCount() {
+        let router = DefaultPopForwardingRouter()
+
+        router.pop()
+
+        #expect(router.popCountCalls == [1])
     }
 }
 
@@ -186,6 +251,31 @@ struct RouterCallDispatchTests {
         spy.dismissAlert()
 
         #expect(spy.dismissAlertCallCount == 1)
+    }
+
+    @Test("pop uses the default single-step stack mutation")
+    func popTracksDefaultCount() {
+        let spy = SpyRouter()
+        spy.pop()
+
+        #expect(spy.popCallCount == 1)
+        #expect(spy.popCountCalls == [1])
+    }
+
+    @Test("pop(count:) records the requested number of screens")
+    func popCountTracksRequestedCount() {
+        let spy = SpyRouter()
+        spy.pop(count: 2)
+
+        #expect(spy.popCountCalls == [2])
+    }
+
+    @Test("popToRoot increments call count")
+    func popToRootTracksCount() {
+        let spy = SpyRouter()
+        spy.popToRoot()
+
+        #expect(spy.popToRootCallCount == 1)
     }
 
     @Test("dismissModal increments call count")
@@ -228,6 +318,9 @@ struct MockRouterTests {
 
         mock.showScreen(.push) { _ in Text("Screen") }
         mock.dismissScreen()
+        mock.pop()
+        mock.pop(count: 2)
+        mock.popToRoot()
         mock.showAlert(.alert, title: "Title", subtitle: nil, buttons: nil)
         mock.showErrorAlert(error: NSError(domain: "", code: 0))
         mock.dismissAlert()

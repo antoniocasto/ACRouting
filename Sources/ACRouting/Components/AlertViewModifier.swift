@@ -8,41 +8,50 @@
 import SwiftUI
 
 extension View {
+    /// Applies the package alert presentation associated with the current router state.
     @ViewBuilder
-    func showAlert(_ alert: Binding<(AnyAppAlert)?>, type: AlertType = .alert) -> some View {
+    func routerAlertModifier(
+        _ configuration: Binding<AnyAppAlert?>,
+        type: AlertType = .alert
+    ) -> some View {
         switch type {
         case .alert:
-            buildAlert(content: self, alert: alert)
+            standardAlertPresentation(content: self, configuration: configuration)
         case .confirmationDialog:
-            buildConfirmationDialog(content: self, alert: alert)
+            confirmationDialogPresentation(content: self, configuration: configuration)
         }
-        
     }
     
     @ViewBuilder
-    private func buildAlert(content: some View, alert: Binding<(AnyAppAlert)?>) -> some View {
+    private func standardAlertPresentation(
+        content: some View,
+        configuration: Binding<AnyAppAlert?>
+    ) -> some View {
         content
-            .alert(alert.wrappedValue?.title ?? "", isPresented: Binding(ifNotNil: alert)) {
-                if let buttons = alert.wrappedValue?.buttons {
-                    buttons()
+            .alert(configuration.wrappedValue?.title ?? "", isPresented: Binding(ifNotNil: configuration)) {
+                if let actions = configuration.wrappedValue?.actions {
+                    actions()
                 }
             } message: {
-                if let subtitle = alert.wrappedValue?.subtitle {
-                    Text(subtitle)
+                if let message = configuration.wrappedValue?.message {
+                    Text(message)
                 }
             }
     }
     
     @ViewBuilder
-    private func buildConfirmationDialog(content: some View, alert: Binding<(AnyAppAlert)?>) -> some View {
+    private func confirmationDialogPresentation(
+        content: some View,
+        configuration: Binding<AnyAppAlert?>
+    ) -> some View {
         content
-            .confirmationDialog(alert.wrappedValue?.title ?? "", isPresented: Binding(ifNotNil: alert)) {
-                if let buttons = alert.wrappedValue?.buttons {
-                    buttons()
+            .confirmationDialog(configuration.wrappedValue?.title ?? "", isPresented: Binding(ifNotNil: configuration)) {
+                if let actions = configuration.wrappedValue?.actions {
+                    actions()
                 }
             } message: {
-                if let subtitle = alert.wrappedValue?.subtitle {
-                    Text(subtitle)
+                if let message = configuration.wrappedValue?.message {
+                    Text(message)
                 }
             }
     }

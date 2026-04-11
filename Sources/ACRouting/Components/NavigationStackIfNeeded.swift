@@ -7,22 +7,24 @@
 
 import SwiftUI
 
-/// Adds a NavigationStack only when needed.
-///
-/// Root RouterView uses it.
-/// Child RouterViews skip it to avoid nested stacks (for push).
+/// Wraps content in a `NavigationStack` only when the current router owns one.
 struct NavigationStackIfNeeded<Content: View>: View {
-    @Binding var path: [AnyDestination]
-    var addNavigationView: Bool = true
+    /// The push path owned by the current router view.
+    @Binding var pushPath: [AnyDestination]
+
+    /// Whether the current router should render a local `NavigationStack`.
+    var ownsNavigationStack = true
+
+    /// The routed content to render inside or outside the owned navigation stack.
     @ViewBuilder var content: Content
 
     var body: some View {
-        if addNavigationView {
-            NavigationStack(path: $path) {
+        if ownsNavigationStack {
+            NavigationStack(path: $pushPath) {
                 content
-                    // This maps AnyDestination values in the path to actual views.
+                    // Map the type-erased destination values back to the stored destination views.
                     .navigationDestination(for: AnyDestination.self) { value in
-                        value.destination
+                        value.view
                     }
             }
         } else {

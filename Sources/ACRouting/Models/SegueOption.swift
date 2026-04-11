@@ -7,15 +7,20 @@
 
 import Foundation
 
+/// Supported presentation styles for `Router.showScreen`.
 public enum SegueOption {
+    /// Pushes the destination onto the current routed navigation stack.
     case push
+    /// Presents the destination in a sheet with a fresh routed navigation context.
     case sheet
+    /// Presents the destination in a full-screen cover with a fresh routed navigation context.
     case fullScreenCover
 
-    /// `.sheet` and `.fullScreenCover` create a NEW navigation context.
-    /// This means the presented root screen can push further screens without affecting
-    /// the underlying stack.
-    internal var shouldAddNewNavigationView: Bool {
+    /// Indicates whether this presentation style owns a fresh `NavigationStack`.
+    ///
+    /// `sheet` and `fullScreenCover` start independent routed flows, while `push`
+    /// continues mutating the current routed push stack.
+    internal var createsNewNavigationStack: Bool {
         switch self {
         case .push:
             return false
