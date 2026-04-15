@@ -195,7 +195,14 @@ Already decided:
 - `dismissScreen()` keeps its current semantics and does not dismiss ancestor modals implicitly.
 - `v1.4.2` support and regression coverage are currently scoped to one ancestor routed modal at a time.
 
-Needs deeper design before implementation:
+Already implemented on this branch:
+- `dismissAncestorModal()` is implemented additively without changing `dismissScreen()` semantics.
+- Routed `.sheet` and `.fullScreenCover` presentations now share one internal routed modal presentation state instead of separate ad hoc storage slots.
+- Mixed-flow regression coverage now includes pushed-child ancestor modal dismissal, modal-root no-op behavior, and separation between `dismissScreen()` and `dismissAncestorModal()`.
+- External `Router` conformers remain source-compatible through a default no-op implementation of `dismissAncestorModal()`.
+- Routed modal presentation state is wrapped behind a dedicated internal modifier, while `showModal` remains a separate overlay-only mechanism.
+
+Still open design questions:
 - which modal layering combinations are first-class and which stay explicitly out of scope
 - whether overlay presentation participates in future normalized presentation state or remains a separate overlay-only mechanism
 
