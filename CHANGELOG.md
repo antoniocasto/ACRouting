@@ -7,6 +7,8 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-04-15
+
 ### Added
 
 - Explicit push stack APIs: `pop()`, `pop(count:)`, and `popToRoot()`.
@@ -14,6 +16,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 - Behavior-level router tests that verify inherited push stack mutation.
 - Additional regression tests that lock down protocol default forwarding, inherited stack preservation, and pushed-screen dismissal semantics.
 - A debug-only SwiftUI preview catalog for local Xcode exploration of push, modal, overlay, and mixed routing flows.
+- Explicit documentation for the modal layering combinations and current limits supported in `v1.4.2`.
 
 ### Changed
 
@@ -24,6 +27,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 - Internal documentation comments, helper naming, and supporting model terminology were clarified across the routing core.
 - README and roadmap guidance were aligned with the current routing behavior, current limitations, and the local preview catalog.
 - `showModal` now uses a consistent default animation of `.smooth` across the protocol extension and the concrete router implementation.
+- Routed `.sheet` and `.fullScreenCover` remain the only first-class routed modal containers in `v1.4.2`; `showModal` stays an overlay-only mechanism.
 - Local planning artifacts under `docs/plans/` are now ignored by Git.
 
 ## [1.3.1] - 2026-04-06

@@ -44,7 +44,7 @@ Notes:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/antoniocasto/ACRouting.git", from: "1.4.0")
+    .package(url: "https://github.com/antoniocasto/ACRouting.git", from: "1.4.2")
 ],
 targets: [
     .target(
@@ -202,6 +202,21 @@ Button("Back to root") {
 - `.sheet`: presents a new modal navigation context with its own routed flow.
 - `.fullScreenCover`: presents a fullscreen modal navigation context on iOS and a sheet-backed equivalent on macOS.
 
+## Supported Modal Layering in `1.4.2`
+
+First-class supported flows:
+- Root flow with push navigation.
+- One routed `.sheet` flow with its own local push stack.
+- One routed `.fullScreenCover` flow with its own local push stack.
+- A `showModal` overlay inside the current router context, including root, pushed, sheet-root, or full-screen-root screens.
+- A pushed child inside one routed `.sheet` or `.fullScreenCover` flow calling `dismissAncestorModal()` to close that first ancestor routed modal.
+
+Current limits and out-of-scope combinations:
+- `dismissAncestorModal()` targets only the first ancestor routed `.sheet` or `.fullScreenCover`.
+- `showModal` remains an overlay API; it does not create a routed modal container and is never a dismiss target for `dismissAncestorModal()`.
+- Behavior is documented and regression-covered for one ancestor routed modal at a time.
+- Presenting one routed `.sheet` or `.fullScreenCover` from inside another routed `.sheet` or `.fullScreenCover` is not first-class in `1.4.2`.
+
 ## Alerts
 
 Examples below assume you already have a `router` instance (from either option above).
@@ -274,7 +289,7 @@ Notes:
 - Pushed child flows mutate an inherited destination stack explicitly through `pop()`, `pop(count:)`, and `popToRoot()`.
 - `dismissScreen()` remains available as a compatibility API and delegates to explicit pop behavior for pushed destinations.
 - `dismissAncestorModal()` lets a pushed child explicitly close its first ancestor routed modal without changing `dismissScreen()` semantics.
-- `showModal` keeps the current router context alive and should be read as an overlay API, not as another routed modal container.
+- Routed `.sheet` and `.fullScreenCover` state now share one internal presentation model, while `showModal` intentionally stays a separate overlay API instead of another routed modal container.
 - If a view reads `@Environment(\.router)` outside `RouterView`, the default fallback is a `MockRouter` that avoids crashes but does not perform real navigation.
 
 ## Internal Preview Catalog

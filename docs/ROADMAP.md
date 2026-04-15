@@ -24,13 +24,15 @@ This roadmap is intended to be the default planning source for future Codex chat
 - The package already covers the most common presentation styles: push, sheet, full screen, alert, and custom overlay modal.
 - Push navigation is now state-driven through explicit stack APIs: `pop()`, `pop(count:)`, and `popToRoot()`.
 - Inherited push-stack ownership is now explicit instead of being inferred from empty-stack heuristics.
+- Routed `.sheet` and `.fullScreenCover` presentations now share one internal presentation state.
+- Pushed child flows can now dismiss their first ancestor routed sheet or full-screen cover explicitly through `dismissAncestorModal()`.
 - The package now has behavior-level regression tests for push-stack mutation and protocol forwarding.
 - A debug-only preview catalog exists for local Xcode exploration of real package flows and current limits.
 
 ### Current gaps to address first
 
-- Modal presentation state is fragmented across multiple slots instead of being modeled as a single normalized presentation state.
-- There is no dedicated API to dismiss an ancestor modal container from deep inside a pushed child flow.
+- Routed sheet/full-screen presentation is normalized, but `showModal` intentionally remains a separate overlay-only mechanism.
+- Modal layering support is intentionally narrow in `v1.4.2` and must stay documented as such.
 - Public API naming is workable, but symbols such as `showScreen` and `SegueOption` are not yet as fluent or Swift-native as they should be for a public package.
 - The current model leans on `AnyView` and `AnyDestination`, which keeps it flexible but blocks stronger typed flows for routes, deep links, and restoration.
 - Missing-router behavior is safe, but diagnostics are still lightweight and could do more than the current `MockRouter` fallback.
@@ -42,11 +44,12 @@ This roadmap is intended to be the default planning source for future Codex chat
 
 Priority: High
 
-- Define a single normalized model for sheet, full-screen, and overlay presentation state.
+- Keep routed `.sheet` and `.fullScreenCover` presentation under one normalized state in `v1.x`.
 - Document which modal layering combinations are supported and which are intentionally out of scope.
-- Move future presentation APIs toward enum-driven or item-driven modeling rather than parallel presentation slots.
+- Keep `showModal` as a separate overlay-only mechanism in `v1.x`, not another routed modal container.
+- Move future routed presentation APIs toward enum-driven or item-driven modeling rather than parallel presentation slots.
 - Keep macOS behavior aligned with the public API while documenting any platform-specific fallback rules.
-- Decide whether ancestor modal dismissal should be introduced as an additive API or documented as intentionally unsupported through `v1.x`.
+- Keep ancestor modal dismissal additive and limited to the first ancestor routed sheet or full-screen cover.
 
 Why it matters:
 The package already has a deterministic push stack, but modal semantics are still spread across separate storage slots and implicit container rules. Typed routing and deeper flow reconstruction should build on a normalized presentation model rather than on parallel ad hoc state.
@@ -191,6 +194,7 @@ Already decided:
 - `dismissAncestorModal()` is the additive API name for dismissing the first ancestor routed modal from a pushed child flow.
 - The API targets only the first ancestor `sheet` or `fullScreenCover`.
 - `showModal` overlays are explicitly out of scope for this API.
+- `showModal` remains a separate overlay-only mechanism in `v1.x`; it does not participate in routed modal normalization.
 - Calls made without an ancestor routed modal should be a no-op with debug-only diagnostics.
 - `dismissScreen()` keeps its current semantics and does not dismiss ancestor modals implicitly.
 - `v1.4.2` support and regression coverage are currently scoped to one ancestor routed modal at a time.
@@ -202,9 +206,17 @@ Already implemented on this branch:
 - External `Router` conformers remain source-compatible through a default no-op implementation of `dismissAncestorModal()`.
 - Routed modal presentation state is wrapped behind a dedicated internal modifier, while `showModal` remains a separate overlay-only mechanism.
 
-Still open design questions:
-- which modal layering combinations are first-class and which stay explicitly out of scope
-- whether overlay presentation participates in future normalized presentation state or remains a separate overlay-only mechanism
+Supported and regression-covered flow shapes in `v1.4.2`:
+- Root flow with push navigation.
+- One routed `.sheet` flow with its own local push stack.
+- One routed `.fullScreenCover` flow with its own local push stack.
+- A lightweight `showModal` overlay inside the current router context, including inside root, pushed, sheet-root, or full-screen-root screens.
+- A pushed child inside one routed `.sheet` or `.fullScreenCover` flow calling `dismissAncestorModal()` to close that first ancestor routed modal.
+
+Explicitly out of scope in `v1.4.2`:
+- Guaranteeing behavior for more than one ancestor routed modal in the same presentation chain.
+- Treating `showModal` overlays as routed modal containers or dismiss targets for `dismissAncestorModal()`.
+- Promising first-class support for presenting one routed sheet/full-screen container from inside another routed sheet/full-screen container.
 
 Why this version:
 This keeps modal semantics cleanup separate from typed-routing work and gives the package a cleaner base for later route typing.
