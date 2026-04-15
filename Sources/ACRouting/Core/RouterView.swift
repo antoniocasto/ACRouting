@@ -112,8 +112,7 @@ public struct RouterView<Content: View>: View, Router {
     public var body: some View {
         NavigationStackIfNeeded(pushPath: $pushPath, ownsNavigationStack: ownsNavigationStack) {
             content(self)
-                .sheetDestinationModifier(destination: routedSheetDestinationBinding)
-                .fullScreenCoverDestinationModifier(destination: routedFullScreenCoverDestinationBinding)
+                .routedModalPresentationModifier(presentationState: $presentationState)
                 .routerAlertModifier($activeAlert, type: activeAlertType)
         }
         .overlayPresentationModifier(
@@ -289,54 +288,6 @@ public struct RouterView<Content: View>: View, Router {
         Binding(
             get: { ancestorRoutedModalPresentation },
             set: { ancestorRoutedModalPresentation = $0 }
-        )
-    }
-
-    /// Maps the unified presentation state to the sheet modifier's expected destination binding.
-    private var routedSheetDestinationBinding: Binding<AnyDestination?> {
-        Binding(
-            get: {
-                guard presentationState?.routedModalStyle == .sheet else {
-                    return nil
-                }
-                return presentationState?.routedModalDestination
-            },
-            set: { newValue in
-                switch newValue {
-                case .some(let destination):
-                    presentationState = RouterPresentationState(
-                        routedModalStyle: .sheet,
-                        routedModalDestination: destination
-                    )
-                case nil:
-                    guard presentationState?.routedModalStyle == .sheet else { return }
-                    presentationState = nil
-                }
-            }
-        )
-    }
-
-    /// Maps the unified presentation state to the full-screen modifier's expected destination binding.
-    private var routedFullScreenCoverDestinationBinding: Binding<AnyDestination?> {
-        Binding(
-            get: {
-                guard presentationState?.routedModalStyle == .fullScreenCover else {
-                    return nil
-                }
-                return presentationState?.routedModalDestination
-            },
-            set: { newValue in
-                switch newValue {
-                case .some(let destination):
-                    presentationState = RouterPresentationState(
-                        routedModalStyle: .fullScreenCover,
-                        routedModalDestination: destination
-                    )
-                case nil:
-                    guard presentationState?.routedModalStyle == .fullScreenCover else { return }
-                    presentationState = nil
-                }
-            }
         )
     }
 
