@@ -24,3 +24,12 @@ DerivedData/
 .codex-plan.md
 .codex/
 docs/plans/
+
+# Local study guide artifacts
+docs/acrouting-study-guide.tex
+docs/acrouting-study-guide.pdf
+docs/acrouting-study-guide.aux
+docs/acrouting-study-guide.log
+docs/acrouting-study-guide.out
+docs/acrouting-study-guide.toc
+docs/acrouting-study-guide.synctex.gz

@@ -24,15 +24,22 @@ struct RouterViewIntegrationTests {
         }
     }
 
-    private func makeChildRouter(
-        stackBox: StackBox
-    ) -> RouterView<Text> {
+    final class ModalBox {
+        var destination: AnyDestination?
+    }
+
+    private func makeChildRouter(stackBox: StackBox) -> RouterView<Text> {
         let binding = Binding<[AnyDestination]>(
             get: { stackBox.stack },
             set: { stackBox.stack = $0 }
         )
 
-        return RouterView(inheritedPushStack: binding) { _ in
+        return RouterView(
+            inheritedPushStack: binding,
+            ancestorRoutedModalPresentation: .constant(nil),
+            usesInheritedPushStack: true,
+            ownsNavigationStack: false
+        ) { _ in
             Text("Child")
         }
     }
@@ -48,7 +55,12 @@ struct RouterViewIntegrationTests {
     func initWithInheritedPushStack() {
         let stackBox = StackBox()
         let binding = Binding<[AnyDestination]>(get: { stackBox.stack }, set: { stackBox.stack = $0 })
-        let _ = RouterView(inheritedPushStack: binding) { _ in
+        let _ = RouterView(
+            inheritedPushStack: binding,
+            ancestorRoutedModalPresentation: .constant(nil),
+            usesInheritedPushStack: true,
+            ownsNavigationStack: false
+        ) { _ in
             Text("Child")
         }
     }
@@ -131,6 +143,12 @@ struct RouterViewIntegrationTests {
         router.dismissModal()
     }
 
+    @Test("dismissAncestorModal is callable")
+    func dismissAncestorModal() {
+        let router: any Router = RouterView { _ in Text("Root") }
+        router.dismissAncestorModal()
+    }
+
     @Test("dismissScreen pops the inherited push stack")
     func dismissScreenPopsInheritedStack() {
         let stackBox = StackBox([AnyDestination(destination: Text("First"))])
@@ -161,6 +179,91 @@ struct RouterViewIntegrationTests {
         router.dismissScreen()
 
         #expect(stackBox.stack.isEmpty)
+    }
+
+    @Test("dismissAncestorModal clears an externally tracked sheet presentation from a pushed child")
+    func dismissAncestorModalClearsTrackedSheetPresentationFromPushedChild() throws {
+        let modalBox = ModalBox()
+        let binding = Binding<AnyDestination?>(
+            get: { modalBox.destination },
+            set: { modalBox.destination = $0 }
+        )
+        let flow = try #require(RouterView<Text>.makePresentedModalFlowForTesting(.sheet, destination: binding))
+
+        #expect(modalBox.destination != nil)
+
+        flow.pushedChild.dismissAncestorModal()
+
+        #expect(modalBox.destination == nil)
+    }
+
+    @Test("dismissAncestorModal clears an externally tracked full-screen presentation from a pushed child")
+    func dismissAncestorModalClearsTrackedFullScreenPresentationFromPushedChild() throws {
+        let modalBox = ModalBox()
+        let binding = Binding<AnyDestination?>(
+            get: { modalBox.destination },
+            set: { modalBox.destination = $0 }
+        )
+        let flow = try #require(RouterView<Text>.makePresentedModalFlowForTesting(.fullScreenCover, destination: binding))
+
+        #expect(modalBox.destination != nil)
+
+        flow.pushedChild.dismissAncestorModal()
+
+        #expect(modalBox.destination == nil)
+    }
+
+    @Test("dismissAncestorModal is a no-op at the modal flow root")
+    func dismissAncestorModalAtModalRootIsNoOp() throws {
+        let modalBox = ModalBox()
+        let binding = Binding<AnyDestination?>(
+            get: { modalBox.destination },
+            set: { modalBox.destination = $0 }
+        )
+        let flow = try #require(RouterView<Text>.makePresentedModalFlowForTesting(.sheet, destination: binding))
+
+        #expect(modalBox.destination != nil)
+
+        flow.modalRoot.dismissAncestorModal()
+
+        #expect(modalBox.destination != nil)
+    }
+
+    @Test("dismissScreen on a pushed child keeps the ancestor modal presentation intact")
+    func dismissScreenOnPushedChildKeepsAncestorModalPresentation() {
+        let pushed = AnyDestination(destination: Text("Pushed"))
+        let stackBox = StackBox([pushed])
+        let stackBinding = Binding<[AnyDestination]>(
+            get: { stackBox.stack },
+            set: { stackBox.stack = $0 }
+        )
+        let modalBox = ModalBox()
+        modalBox.destination = AnyDestination(destination: Text("Sheet"))
+        let modalBinding = Binding<AnyDestination?>(
+            get: { modalBox.destination },
+            set: { modalBox.destination = $0 }
+        )
+        let router: any Router = RouterView<EmptyView>.makeChildRouterForTesting(
+            inheritedPushStack: stackBinding,
+            ancestorModalDestination: modalBinding,
+            option: .sheet
+        )
+
+        router.dismissScreen()
+
+        #expect(stackBox.stack.isEmpty)
+        #expect(modalBox.destination != nil)
+    }
+
+    @Test("dismissAncestorModal is a no-op when no ancestor routed modal exists")
+    func dismissAncestorModalWithoutAncestorIsNoOp() {
+        let first = AnyDestination(destination: Text("First"))
+        let stackBox = StackBox([first])
+        let router: any Router = makeChildRouter(stackBox: stackBox)
+
+        router.dismissAncestorModal()
+
+        #expect(stackBox.stack == [first])
     }
 
     @Test("pop removes one screen from the inherited push stack")
