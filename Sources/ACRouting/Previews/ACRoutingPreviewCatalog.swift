@@ -25,9 +25,9 @@ private struct ACRoutingPreviewCatalogHome: View {
                 ) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("• `dismissScreen()` pops a pushed screen, but dismisses a sheet or full-screen cover only when you are at that modal flow root.")
+                        Text("• `dismissAncestorModal()` lets a pushed child close its first ancestor routed sheet or full-screen cover explicitly.")
                         Text("• `pop()`, `pop(count:)`, and `popToRoot()` control only the current push stack.")
                         Text("• `showModal` is a lightweight overlay on the current router context, not a separate routed flow.")
-                        Text("• There is currently no dedicated API for dismissing an ancestor modal container from deep inside a pushed child flow.")
                     }
                     .font(.footnote)
                     .foregroundStyle(.secondary)
@@ -268,7 +268,7 @@ private struct RoutedSheetDetailScreen: View {
     var body: some View {
         DemoScreen(
             title: "Sheet Detail \(level)",
-            summary: "This screen is still inside the sheet's local navigation stack. Here `dismissScreen()` only removes the current pushed screen; it does not close the whole sheet."
+            summary: "This screen is still inside the sheet's local navigation stack. Here `dismissScreen()` only removes the current pushed screen, while `dismissAncestorModal()` closes the ancestor sheet explicitly."
         ) {
             Button("Push Another Sheet Detail") {
                 router.showScreen(.push) { _ in
@@ -284,6 +284,11 @@ private struct RoutedSheetDetailScreen: View {
 
             Button("Dismiss Current Sheet Screen") {
                 router.dismissScreen()
+            }
+            .buttonStyle(.bordered)
+
+            Button("Dismiss Ancestor Sheet") {
+                router.dismissAncestorModal()
             }
             .buttonStyle(.bordered)
 
@@ -324,12 +329,17 @@ private struct FullScreenReceiptScreen: View {
     var body: some View {
         DemoScreen(
             title: "Receipt Details",
-            summary: "This screen is pushed inside the full-screen modal flow, not the parent catalog flow."
+            summary: "This screen is pushed inside the full-screen modal flow, not the parent catalog flow. Use `dismissAncestorModal()` here when you want to close the full-screen container instead of only popping."
         ) {
             Button("Pop Receipt Screen") {
                 router.dismissScreen()
             }
             .buttonStyle(.borderedProminent)
+
+            Button("Dismiss Ancestor Full-Screen Cover") {
+                router.dismissAncestorModal()
+            }
+            .buttonStyle(.bordered)
 
             Button("Return To Full-Screen Root") {
                 router.popToRoot()

@@ -7,6 +7,31 @@
 
 import SwiftUI
 
+struct RouterPresentationState {
+    var routedModal: RoutedModalPresentation?
+}
+
+enum RoutedModalPresentation {
+    case sheet(AnyDestination)
+    case fullScreenCover(AnyDestination)
+
+    var destination: AnyDestination {
+        switch self {
+        case .sheet(let destination), .fullScreenCover(let destination):
+            return destination
+        }
+    }
+
+    var option: SegueOption {
+        switch self {
+        case .sheet:
+            return .sheet
+        case .fullScreenCover:
+            return .fullScreenCover
+        }
+    }
+}
+
 /// A SwiftUI container that owns routing state and exposes it through `Router`.
 ///
 /// `RouterView` is the package's routing runtime:
@@ -27,6 +52,7 @@ public struct RouterView<Content: View>: View, Router {
     /// - Parameter content: A view builder that receives the current router.
     public init(@ViewBuilder content: @escaping (any Router) -> Content) {
         self._inheritedPushStack = .constant([])
+        self._ancestorRoutedModalPresentation = .constant(nil)
         self.usesInheritedPushStack = false
         self.ownsNavigationStack = true
         self.content = content
@@ -39,10 +65,30 @@ public struct RouterView<Content: View>: View, Router {
     /// - Parameters:
     ///   - inheritedPushStack: A mutable push stack inherited from an ancestor router.
     ///   - content: A view builder that receives the current router.
-    init(inheritedPushStack: Binding<[AnyDestination]>, @ViewBuilder content: @escaping (any Router) -> Content) {
+    init(
+        inheritedPushStack: Binding<[AnyDestination]>,
+        ancestorRoutedModalPresentation: Binding<RoutedModalPresentation?> = .constant(nil),
+        @ViewBuilder content: @escaping (any Router) -> Content
+    ) {
         self._inheritedPushStack = inheritedPushStack
+        self._ancestorRoutedModalPresentation = ancestorRoutedModalPresentation
         self.usesInheritedPushStack = true
         self.ownsNavigationStack = false
+        self.content = content
+    }
+
+    /// Creates a modal flow root that keeps a binding to the presenter modal state.
+    ///
+    /// This initializer is internal to the package because only routed modal
+    /// presentations should inject an ancestor modal presentation binding.
+    init(
+        ancestorRoutedModalPresentation: Binding<RoutedModalPresentation?>,
+        @ViewBuilder content: @escaping (any Router) -> Content
+    ) {
+        self._inheritedPushStack = .constant([])
+        self._ancestorRoutedModalPresentation = ancestorRoutedModalPresentation
+        self.usesInheritedPushStack = false
+        self.ownsNavigationStack = true
         self.content = content
     }
 
@@ -50,9 +96,8 @@ public struct RouterView<Content: View>: View, Router {
 
     @Environment(\.dismiss) private var dismiss
 
-    /// Routed destinations presented by SwiftUI modal APIs.
-    @State private var sheetDestination: AnyDestination?
-    @State private var fullScreenCoverDestination: AnyDestination?
+    /// Routed modal presentation state for `.sheet` and `.fullScreenCover`.
+    @State private var presentationState = RouterPresentationState()
 
     /// Custom overlay destination presented above the current routed context.
     @State private var overlayDestination: AnyDestination?
@@ -74,14 +119,10 @@ public struct RouterView<Content: View>: View, Router {
     /// `inheritedPushStack` is a binding to a stack owned by an ancestor RouterView.
     /// This is what allows a pushed screen (wrapped in a child RouterView) to keep pushing
     /// onto the SAME root stack without creating nested NavigationStacks.
-    ///
-    /// Root case:
-    /// - inheritedPushStack is `.constant([])` and will stay empty.
-    ///
-    /// Child case:
-    /// - inheritedPushStack is bound to the root `path` (or another shared stack),
-    ///   so pushes happen on that shared array.
     @Binding private var inheritedPushStack: [AnyDestination]
+
+    /// A binding to the first ancestor routed modal presentation, when one exists.
+    @Binding private var ancestorRoutedModalPresentation: RoutedModalPresentation?
 
     /// Tracks whether push mutations should target the parent binding or the local stack.
     /// This avoids inferring ownership from the current stack contents.
@@ -98,8 +139,8 @@ public struct RouterView<Content: View>: View, Router {
     public var body: some View {
         NavigationStackIfNeeded(pushPath: $pushPath, ownsNavigationStack: ownsNavigationStack) {
             content(self)
-                .sheetDestinationModifier(destination: $sheetDestination)
-                .fullScreenCoverDestinationModifier(destination: $fullScreenCoverDestination)
+                .sheetDestinationModifier(destination: routedSheetDestinationBinding)
+                .fullScreenCoverDestinationModifier(destination: routedFullScreenCoverDestinationBinding)
                 .routerAlertModifier($activeAlert, type: activeAlertType)
         }
         .overlayPresentationModifier(
@@ -124,11 +165,16 @@ public struct RouterView<Content: View>: View, Router {
 
         switch option {
         case .push:
-            wrappedScreen = RouterView<T>(inheritedPushStack: pushStackBinding) { newRouter in
+            wrappedScreen = RouterView<T>(
+                inheritedPushStack: pushStackBinding,
+                ancestorRoutedModalPresentation: ancestorRoutedModalPresentationBinding
+            ) { newRouter in
                 destination(newRouter)
             }
         case .sheet, .fullScreenCover:
-            wrappedScreen = RouterView<T> { newRouter in
+            wrappedScreen = RouterView<T>(
+                ancestorRoutedModalPresentation: routedModalPresentationBinding
+            ) { newRouter in
                 destination(newRouter)
             }
         }
@@ -141,9 +187,9 @@ public struct RouterView<Content: View>: View, Router {
                 stack.append(routedDestination)
             }
         case .sheet:
-            sheetDestination = routedDestination
+            presentationState.routedModal = .sheet(routedDestination)
         case .fullScreenCover:
-            fullScreenCoverDestination = routedDestination
+            presentationState.routedModal = .fullScreenCover(routedDestination)
         }
     }
 
@@ -157,6 +203,22 @@ public struct RouterView<Content: View>: View, Router {
         } else {
             dismiss()
         }
+    }
+
+    /// Dismisses the first ancestor routed modal from a pushed child flow.
+    ///
+    /// This action is available only when the current router was pushed inside a
+    /// sheet or full-screen cover flow. Root screens and modal roots should keep
+    /// using `dismissScreen()` to close their current presentation context.
+    public func dismissAncestorModal() {
+        guard usesInheritedPushStack, ancestorRoutedModalPresentation != nil else {
+            #if DEBUG
+            debugPrint("dismissAncestorModal() called without an ancestor routed modal.")
+            #endif
+            return
+        }
+
+        ancestorRoutedModalPresentation = nil
     }
 
     /// Removes the top-most destination from the active push stack.
@@ -230,6 +292,64 @@ public struct RouterView<Content: View>: View, Router {
         usesInheritedPushStack ? $inheritedPushStack : $pushPath
     }
 
+    /// A binding to the currently presented routed modal owned by this router.
+    private var routedModalPresentationBinding: Binding<RoutedModalPresentation?> {
+        Binding(
+            get: { presentationState.routedModal },
+            set: { presentationState.routedModal = $0 }
+        )
+    }
+
+    /// A binding to the first ancestor routed modal presentation when available.
+    private var ancestorRoutedModalPresentationBinding: Binding<RoutedModalPresentation?> {
+        Binding(
+            get: { ancestorRoutedModalPresentation },
+            set: { ancestorRoutedModalPresentation = $0 }
+        )
+    }
+
+    /// Maps the unified presentation state to the sheet modifier's expected destination binding.
+    private var routedSheetDestinationBinding: Binding<AnyDestination?> {
+        Binding(
+            get: {
+                guard case .sheet(let destination)? = presentationState.routedModal else {
+                    return nil
+                }
+                return destination
+            },
+            set: { newValue in
+                switch newValue {
+                case .some(let destination):
+                    presentationState.routedModal = .sheet(destination)
+                case nil:
+                    guard case .sheet = presentationState.routedModal else { return }
+                    presentationState.routedModal = nil
+                }
+            }
+        )
+    }
+
+    /// Maps the unified presentation state to the full-screen modifier's expected destination binding.
+    private var routedFullScreenCoverDestinationBinding: Binding<AnyDestination?> {
+        Binding(
+            get: {
+                guard case .fullScreenCover(let destination)? = presentationState.routedModal else {
+                    return nil
+                }
+                return destination
+            },
+            set: { newValue in
+                switch newValue {
+                case .some(let destination):
+                    presentationState.routedModal = .fullScreenCover(destination)
+                case nil:
+                    guard case .fullScreenCover = presentationState.routedModal else { return }
+                    presentationState.routedModal = nil
+                }
+            }
+        )
+    }
+
     /// Applies a mutation to the active push stack and verifies inherited stack writes in debug builds.
     ///
     /// The assertion documents an internal invariant: pushed child router views must receive
@@ -249,3 +369,73 @@ public struct RouterView<Content: View>: View, Router {
         )
     }
 }
+
+#if DEBUG
+extension RouterView {
+    /// Test-only helper that creates the pushed child router used inside the current flow.
+    func makePushedChildRouterForTesting() -> RouterView<EmptyView> {
+        RouterView<EmptyView>(
+            inheritedPushStack: pushStackBinding,
+            ancestorRoutedModalPresentation: ancestorRoutedModalPresentationBinding
+        ) { _ in
+            EmptyView()
+        }
+    }
+
+    /// Test-only helper that creates a pushed child router wired to an externally tracked routed modal.
+    static func makeChildRouterForTesting(
+        inheritedPushStack: Binding<[AnyDestination]>,
+        ancestorModalDestination: Binding<AnyDestination?>,
+        option: SegueOption
+    ) -> RouterView<EmptyView> {
+        RouterView<EmptyView>(
+            inheritedPushStack: inheritedPushStack,
+            ancestorRoutedModalPresentation: makeAncestorRoutedModalPresentationBinding(
+                destination: ancestorModalDestination,
+                option: option
+            )
+        ) { _ in
+            EmptyView()
+        }
+    }
+
+    /// Test-only helper that wires an external routed modal binding into a modal root and one pushed child.
+    static func makePresentedModalFlowForTesting(
+        _ option: SegueOption,
+        destination: Binding<AnyDestination?>
+    ) -> (modalRoot: RouterView<EmptyView>, pushedChild: RouterView<EmptyView>)? {
+        guard option != .push else { return nil }
+
+        let ancestorBinding = makeAncestorRoutedModalPresentationBinding(destination: destination, option: option)
+        let modalRoot = RouterView<EmptyView>(ancestorRoutedModalPresentation: ancestorBinding) { _ in
+            EmptyView()
+        }
+        destination.wrappedValue = AnyDestination(destination: modalRoot)
+        return (modalRoot, modalRoot.makePushedChildRouterForTesting())
+    }
+
+    /// Maps an external routed modal destination to the internal presentation enum used by the router.
+    private static func makeAncestorRoutedModalPresentationBinding(
+        destination: Binding<AnyDestination?>,
+        option: SegueOption
+    ) -> Binding<RoutedModalPresentation?> {
+        Binding(
+            get: {
+                guard let destination = destination.wrappedValue else { return nil }
+
+                switch option {
+                case .push:
+                    return nil
+                case .sheet:
+                    return .sheet(destination)
+                case .fullScreenCover:
+                    return .fullScreenCover(destination)
+                }
+            },
+            set: { newValue in
+                destination.wrappedValue = newValue?.destination
+            }
+        )
+    }
+}
+#endif

@@ -10,6 +10,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 ### Added
 
 - Explicit push stack APIs: `pop()`, `pop(count:)`, and `popToRoot()`.
+- Additive ancestor modal dismissal API: `dismissAncestorModal()`.
 - Behavior-level router tests that verify inherited push stack mutation.
 - Additional regression tests that lock down protocol default forwarding, inherited stack preservation, and pushed-screen dismissal semantics.
 - A debug-only SwiftUI preview catalog for local Xcode exploration of push, modal, overlay, and mixed routing flows.
@@ -18,6 +19,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 - Pushed child routers now mutate the inherited stack deterministically instead of relying on the old empty-stack ownership heuristic.
 - `dismissScreen()` now uses explicit pop behavior for pushed destinations while keeping modal dismissal behavior intact.
+- Pushed child flows inside routed sheets and full-screen covers can now dismiss their first ancestor modal explicitly through `dismissAncestorModal()`.
 - `RouterView` now exposes a role-specific public initializer for owned navigation contexts, while inherited push-stack wiring stays internal to the package.
 - Internal documentation comments, helper naming, and supporting model terminology were clarified across the routing core.
 - README and roadmap guidance were aligned with the current routing behavior, current limitations, and the local preview catalog.

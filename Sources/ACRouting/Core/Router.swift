@@ -29,6 +29,13 @@ public protocol Router {
     /// In root or modal contexts it delegates to SwiftUI dismissal.
     func dismissScreen()
 
+    /// Dismisses the first ancestor routed modal from a pushed child flow.
+    ///
+    /// This API targets only routed modal containers created with `.sheet` or
+    /// `.fullScreenCover`. It does not dismiss lightweight overlays shown with
+    /// `showModal()`, and it is a no-op when no ancestor routed modal exists.
+    func dismissAncestorModal()
+
     /// Removes the top-most destination from the current push stack.
     func pop()
 
@@ -86,6 +93,13 @@ public protocol Router {
 }
 
 public extension Router {
+    /// Default no-op implementation so additive protocol evolution stays source-compatible.
+    func dismissAncestorModal() {
+        #if DEBUG
+        debugPrint("dismissAncestorModal() is unavailable for this Router conformer.")
+        #endif
+    }
+
     /// Convenience wrapper for removing a single pushed destination.
     func pop() {
         pop(count: 1)
@@ -141,6 +155,10 @@ struct MockRouter: Router {
     }
     
     func dismissScreen() {
+        print("MockRouter does not work")
+    }
+
+    func dismissAncestorModal() {
         print("MockRouter does not work")
     }
 

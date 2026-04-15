@@ -184,11 +184,18 @@ Once the first explicit stack APIs ship, the package needs stronger study materi
 
 - Modal semantics hardening patch.
 - Clarify supported modal combinations and current limits.
-- Decide whether ancestor modal dismissal needs an additive API in `v1.x`.
+- Add additive ancestor modal dismissal API support in `v1.x`.
 - Expand mixed-flow regression coverage only.
 
+Already decided:
+- `dismissAncestorModal()` is the additive API name for dismissing the first ancestor routed modal from a pushed child flow.
+- The API targets only the first ancestor `sheet` or `fullScreenCover`.
+- `showModal` overlays are explicitly out of scope for this API.
+- Calls made without an ancestor routed modal should be a no-op with debug-only diagnostics.
+- `dismissScreen()` keeps its current semantics and does not dismiss ancestor modals implicitly.
+- `v1.4.2` support and regression coverage are currently scoped to one ancestor routed modal at a time.
+
 Needs deeper design before implementation:
-- whether ancestor modal dismissal becomes a new additive API or remains intentionally unsupported in `v1.x`
 - which modal layering combinations are first-class and which stay explicitly out of scope
 - whether overlay presentation participates in future normalized presentation state or remains a separate overlay-only mechanism
 
