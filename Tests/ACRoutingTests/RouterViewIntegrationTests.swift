@@ -34,7 +34,12 @@ struct RouterViewIntegrationTests {
             set: { stackBox.stack = $0 }
         )
 
-        return RouterView(inheritedPushStack: binding) { _ in
+        return RouterView(
+            inheritedPushStack: binding,
+            ancestorRoutedModalPresentation: .constant(nil),
+            usesInheritedPushStack: true,
+            ownsNavigationStack: false
+        ) { _ in
             Text("Child")
         }
     }
@@ -50,7 +55,12 @@ struct RouterViewIntegrationTests {
     func initWithInheritedPushStack() {
         let stackBox = StackBox()
         let binding = Binding<[AnyDestination]>(get: { stackBox.stack }, set: { stackBox.stack = $0 })
-        let _ = RouterView(inheritedPushStack: binding) { _ in
+        let _ = RouterView(
+            inheritedPushStack: binding,
+            ancestorRoutedModalPresentation: .constant(nil),
+            usesInheritedPushStack: true,
+            ownsNavigationStack: false
+        ) { _ in
             Text("Child")
         }
     }
