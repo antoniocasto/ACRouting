@@ -34,6 +34,7 @@ final class SpyRouter: Router {
 
     private(set) var showScreenCalls: [ShowScreenCall] = []
     private(set) var dismissScreenCallCount = 0
+    private(set) var dismissAncestorModalCallCount = 0
     private(set) var popCallCount = 0
     private(set) var popCountCalls: [Int] = []
     private(set) var popToRootCallCount = 0
@@ -51,6 +52,10 @@ final class SpyRouter: Router {
 
     func dismissScreen() {
         dismissScreenCallCount += 1
+    }
+
+    func dismissAncestorModal() {
+        dismissAncestorModalCallCount += 1
     }
 
     func pop() {
@@ -215,6 +220,15 @@ struct RouterProtocolDefaultsTests {
 
         #expect(router.popCountCalls == [1])
     }
+
+    @Test("dismissAncestorModal has a default no-op implementation for custom conformers")
+    func dismissAncestorModalDefaultImplementationIsCallable() {
+        let router = DefaultPopForwardingRouter()
+
+        router.dismissAncestorModal()
+
+        #expect(router.popCountCalls.isEmpty)
+    }
 }
 
 // MARK: - Spy Router Dispatch Tests
@@ -251,6 +265,14 @@ struct RouterCallDispatchTests {
         spy.dismissAlert()
 
         #expect(spy.dismissAlertCallCount == 1)
+    }
+
+    @Test("dismissAncestorModal increments call count")
+    func dismissAncestorModalTracksCount() {
+        let spy = SpyRouter()
+        spy.dismissAncestorModal()
+
+        #expect(spy.dismissAncestorModalCallCount == 1)
     }
 
     @Test("pop uses the default single-step stack mutation")
@@ -318,6 +340,7 @@ struct MockRouterTests {
 
         mock.showScreen(.push) { _ in Text("Screen") }
         mock.dismissScreen()
+        mock.dismissAncestorModal()
         mock.pop()
         mock.pop(count: 2)
         mock.popToRoot()

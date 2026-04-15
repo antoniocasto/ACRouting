@@ -44,7 +44,7 @@ Notes:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/antoniocasto/ACRouting.git", from: "1.4.0")
+    .package(url: "https://github.com/antoniocasto/ACRouting.git", from: "1.4.2")
 ],
 targets: [
     .target(
@@ -161,9 +161,24 @@ Current behavior:
 - In a pushed destination, `dismissScreen()` pops the current pushed screen from the inherited stack.
 - In a sheet or full-screen flow root, it dismisses the presented modal context.
 - For push flows, prefer the explicit stack APIs below when you want deterministic navigation control.
-- There is currently no dedicated `Router` API to dismiss an ancestor modal container from deep inside a pushed child flow.
+- Use `dismissAncestorModal()` from a pushed child inside a sheet or full-screen flow when you need to close that ancestor routed modal explicitly.
 
-### 4) Control the push stack explicitly
+### 4) Dismiss an ancestor modal from a pushed child
+
+```swift
+@Environment(\.router) private var router
+
+Button("Close Sheet") {
+    router.dismissAncestorModal()
+}
+```
+
+Current behavior:
+- `dismissAncestorModal()` targets the first ancestor routed modal created with `.sheet` or `.fullScreenCover`.
+- It does not dismiss overlays shown with `showModal`.
+- If no ancestor routed modal exists, the call is a no-op.
+
+### 5) Control the push stack explicitly
 
 ```swift
 @Environment(\.router) private var router
@@ -186,6 +201,21 @@ Button("Back to root") {
 - `.push`: appends to the current stack.
 - `.sheet`: presents a new modal navigation context with its own routed flow.
 - `.fullScreenCover`: presents a fullscreen modal navigation context on iOS and a sheet-backed equivalent on macOS.
+
+## Supported Modal Layering in `1.4.2`
+
+First-class supported flows:
+- Root flow with push navigation.
+- One routed `.sheet` flow with its own local push stack.
+- One routed `.fullScreenCover` flow with its own local push stack.
+- A `showModal` overlay inside the current router context, including root, pushed, sheet-root, or full-screen-root screens.
+- A pushed child inside one routed `.sheet` or `.fullScreenCover` flow calling `dismissAncestorModal()` to close that first ancestor routed modal.
+
+Current limits and out-of-scope combinations:
+- `dismissAncestorModal()` targets only the first ancestor routed `.sheet` or `.fullScreenCover`.
+- `showModal` remains an overlay API; it does not create a routed modal container and is never a dismiss target for `dismissAncestorModal()`.
+- Behavior is documented and regression-covered for one ancestor routed modal at a time.
+- Presenting one routed `.sheet` or `.fullScreenCover` from inside another routed `.sheet` or `.fullScreenCover` is not first-class in `1.4.2`.
 
 ## Alerts
 
@@ -258,8 +288,8 @@ Notes:
 - The package is designed to keep routing available across pushes and modal flows, not to model routes as typed values yet.
 - Pushed child flows mutate an inherited destination stack explicitly through `pop()`, `pop(count:)`, and `popToRoot()`.
 - `dismissScreen()` remains available as a compatibility API and delegates to explicit pop behavior for pushed destinations.
-- Modal flow dismissal is currently scoped to the modal flow root; deep pushed children do not yet have a dedicated API to dismiss an ancestor modal container directly.
-- `showModal` keeps the current router context alive and should be read as an overlay API, not as another routed modal container.
+- `dismissAncestorModal()` lets a pushed child explicitly close its first ancestor routed modal without changing `dismissScreen()` semantics.
+- Routed `.sheet` and `.fullScreenCover` state now share one internal presentation model, while `showModal` intentionally stays a separate overlay API instead of another routed modal container.
 - If a view reads `@Environment(\.router)` outside `RouterView`, the default fallback is a `MockRouter` that avoids crashes but does not perform real navigation.
 
 ## Internal Preview Catalog

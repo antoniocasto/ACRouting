@@ -21,13 +21,26 @@ private struct ACRoutingPreviewCatalogHome: View {
 
                 PreviewExampleCard(
                     title: "Current Semantics",
-                    summary: "These previews intentionally document the library as it exists today, including its current limits."
+                    summary: "These previews intentionally document the `v1.4.2` behavior surface as it exists today, including the current limits."
                 ) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("• `dismissScreen()` pops a pushed screen, but dismisses a sheet or full-screen cover only when you are at that modal flow root.")
+                        Text("• `dismissAncestorModal()` lets a pushed child close only its first ancestor routed sheet or full-screen cover explicitly.")
                         Text("• `pop()`, `pop(count:)`, and `popToRoot()` control only the current push stack.")
                         Text("• `showModal` is a lightweight overlay on the current router context, not a separate routed flow.")
-                        Text("• There is currently no dedicated API for dismissing an ancestor modal container from deep inside a pushed child flow.")
+                    }
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                }
+
+                PreviewExampleCard(
+                    title: "v1.4.2 Layering Limits",
+                    summary: "The catalog shows only the flow shapes that are documented and regression-covered in `v1.4.2`."
+                ) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("• One routed `.sheet` or one routed `.fullScreenCover` can own its own local push stack.")
+                        Text("• `showModal` may appear inside the current router context, including root, pushed, sheet-root, or full-screen-root screens.")
+                        Text("• The catalog does not demonstrate nested routed sheet/full-screen containers because those combinations are not first-class in `v1.4.2`.")
                     }
                     .font(.footnote)
                     .foregroundStyle(.secondary)
@@ -47,7 +60,7 @@ private struct ACRoutingPreviewCatalogHome: View {
 
                 PreviewExampleCard(
                     title: "Modal Flows",
-                    summary: "Shows that `.sheet` and `.fullScreenCover` start fresh routed flows with their own local navigation stacks."
+                    summary: "Shows the first-class routed modal containers in `v1.4.2`: `.sheet` and `.fullScreenCover`, each with its own local navigation stack."
                 ) {
                     Button("Open Modal Demo") {
                         router.showScreen(.sheet) { _ in
@@ -92,7 +105,7 @@ private struct ACRoutingPreviewCatalogHome: View {
                 .font(.body)
                 .foregroundStyle(.secondary)
 
-            Text("If a behavior looks constrained, that is intentional: the catalog prefers today’s real capabilities over aspirational examples.")
+            Text("If a behavior looks constrained, that is intentional: the catalog prefers the real `v1.4.2` capabilities over aspirational examples.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
@@ -213,7 +226,7 @@ private struct ModalFlowsDemoRoot: View {
     var body: some View {
         DemoScreen(
             title: "Modal Flows",
-            summary: "Both buttons below start a fresh routed flow. Inside those flows you can still push more screens, but the push stack stays local to that modal flow."
+            summary: "Both buttons below start a supported routed modal flow in `v1.4.2`. Inside those flows you can still push more screens, but the push stack stays local to that modal flow."
         ) {
             Button("Open Routed Sheet") {
                 router.showScreen(.sheet) { _ in
@@ -268,7 +281,7 @@ private struct RoutedSheetDetailScreen: View {
     var body: some View {
         DemoScreen(
             title: "Sheet Detail \(level)",
-            summary: "This screen is still inside the sheet's local navigation stack. Here `dismissScreen()` only removes the current pushed screen; it does not close the whole sheet."
+            summary: "This screen is still inside the sheet's local navigation stack. Here `dismissScreen()` only removes the current pushed screen, while `dismissAncestorModal()` closes the ancestor sheet explicitly."
         ) {
             Button("Push Another Sheet Detail") {
                 router.showScreen(.push) { _ in
@@ -284,6 +297,11 @@ private struct RoutedSheetDetailScreen: View {
 
             Button("Dismiss Current Sheet Screen") {
                 router.dismissScreen()
+            }
+            .buttonStyle(.bordered)
+
+            Button("Dismiss Ancestor Sheet") {
+                router.dismissAncestorModal()
             }
             .buttonStyle(.bordered)
 
@@ -324,12 +342,17 @@ private struct FullScreenReceiptScreen: View {
     var body: some View {
         DemoScreen(
             title: "Receipt Details",
-            summary: "This screen is pushed inside the full-screen modal flow, not the parent catalog flow."
+            summary: "This screen is pushed inside the full-screen modal flow, not the parent catalog flow. Use `dismissAncestorModal()` here when you want to close the full-screen container instead of only popping."
         ) {
             Button("Pop Receipt Screen") {
                 router.dismissScreen()
             }
             .buttonStyle(.borderedProminent)
+
+            Button("Dismiss Ancestor Full-Screen Cover") {
+                router.dismissAncestorModal()
+            }
+            .buttonStyle(.bordered)
 
             Button("Return To Full-Screen Root") {
                 router.popToRoot()
@@ -347,7 +370,7 @@ private struct OverlayAndAlertsDemoRoot: View {
     var body: some View {
         DemoScreen(
             title: "Alerts and Overlays",
-            summary: "Alerts and confirmation dialogs use SwiftUI presentation APIs. `showModal` stays on the current router context, so it works well for lightweight overlay UI but does not create a new routed flow."
+            summary: "Alerts and confirmation dialogs use SwiftUI presentation APIs. `showModal` stays on the current router context, so it works well for lightweight overlay UI but does not create a new routed flow or another routed modal container."
         ) {
             Button("Show Standard Alert") {
                 router.showAlert(
@@ -434,7 +457,7 @@ private struct ComplexCheckoutDemoRoot: View {
     var body: some View {
         DemoScreen(
             title: "Complex Checkout",
-            summary: "This demo mixes only behaviors that the library supports today: push navigation, a coupon sheet with its own local push stack, a lightweight payment overlay, and a confirmation full-screen cover."
+            summary: "This demo mixes only the combinations documented for `v1.4.2`: push navigation, one routed sheet with its own local push stack, a lightweight overlay on the current context, and a confirmation full-screen cover."
         ) {
             Button("Inspect Featured Product") {
                 router.showScreen(.push) { _ in
