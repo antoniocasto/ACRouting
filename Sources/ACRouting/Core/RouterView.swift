@@ -25,6 +25,7 @@ struct RouterPresentationState {
 /// - every presented destination is wrapped in another `RouterView` so routing stays available throughout the flow.
 ///
 /// This design keeps feature views independent from raw SwiftUI navigation state while still allowing deterministic stack mutation.
+/// App-owned builders or router adapters can still decide what view to construct for each routed context.
 public struct RouterView<Content: View>: View, Router {
     // MARK: Initialization
 
@@ -35,6 +36,9 @@ public struct RouterView<Content: View>: View, Router {
     /// - modal flow roots created by the package.
     ///
     /// - Parameter content: A view builder that receives the current router.
+    ///
+    /// In larger apps, this closure often creates an app-owned router adapter and asks a builder
+    /// or factory to assemble the root screen for that flow.
     public init(@ViewBuilder content: @escaping (any Router) -> Content) {
         self.init(
             inheritedPushStack: .constant([]),
@@ -132,6 +136,10 @@ public struct RouterView<Content: View>: View, Router {
     /// Push presentations inherit the current push stack so nested screens keep mutating the
     /// same navigation state. Modal presentations start a fresh routed flow with their own
     /// local navigation stack.
+    ///
+    /// - Parameters:
+    ///   - option: The routed presentation style to use.
+    ///   - destination: A builder that creates the view for the new routed context.
     public func showScreen<T: View>(_ option: SegueOption, @ViewBuilder destination: @escaping (any Router) -> T) {
         let wrappedScreen: RouterView<T>
 
@@ -229,13 +237,23 @@ public struct RouterView<Content: View>: View, Router {
         }
     }
     
-    /// Stores the data needed to present a standard alert or confirmation dialog.
+    /// Presents a standard alert or confirmation dialog in the current routed context.
+    ///
+    /// - Parameters:
+    ///   - option: The SwiftUI alert presentation style to use.
+    ///   - title: The alert title.
+    ///   - subtitle: Optional secondary text shown below the title.
+    ///   - buttons: Optional custom SwiftUI actions.
     public func showAlert(_ option: AlertType, title: String, subtitle: String? = nil, buttons: (@Sendable () -> AnyView)? = nil) {
         activeAlertType = option
         activeAlert = AnyAppAlert(title: title, message: subtitle, actions: buttons)
     }
     
-    /// Stores the data needed to present an error alert using the error's localized description.
+    /// Presents an error alert using the error's localized description.
+    ///
+    /// - Parameters:
+    ///   - error: The error whose localized description becomes the alert message.
+    ///   - buttons: Optional custom SwiftUI actions.
     public func showErrorAlert(error: any Error, buttons: (@Sendable () -> AnyView)? = nil) {
         activeAlertType = .alert
         activeAlert = AnyAppAlert(error: error, actions: buttons)
@@ -251,6 +269,13 @@ public struct RouterView<Content: View>: View, Router {
     /// Unlike `.sheet` and `.fullScreenCover`, this does not create a new routed flow.
     /// The overlay keeps using the current router context, which makes it suitable for
     /// lightweight UI such as custom alerts, confirmations, or loading states.
+    ///
+    /// - Parameters:
+    ///   - backgroundColor: The overlay background color.
+    ///   - backgroundTransition: The transition used for the overlay background.
+    ///   - animation: The animation applied when the overlay appears or disappears.
+    ///   - backgroundTapDismissesModal: A Boolean value indicating whether tapping the background dismisses the overlay.
+    ///   - screen: A builder that creates the overlay content.
     public func showModal<T>(
         backgroundColor: Color = Color.black.opacity(0.6),
         backgroundTransition: AnyTransition = .opacity.animation(.smooth),

@@ -14,6 +14,8 @@ import SwiftUI
 ///
 /// Every destination builder receives another `Router` instance so pushed and presented
 /// views can keep routing without learning about the underlying stack implementation.
+/// This keeps `ACRouting` focused on navigation while applications remain free to assemble
+/// screens through their own builders, factories, or router adapters.
 @MainActor
 public protocol Router {
     /// Presents a destination using the requested segue style.
@@ -21,6 +23,9 @@ public protocol Router {
     /// - Parameters:
     ///   - option: The presentation style to use for the destination.
     ///   - destination: A builder that creates the presented view and receives the router for that destination context.
+    ///
+    /// Use this API to keep screen assembly at the call site or inside an app-owned adapter.
+    /// `ACRouting` owns only the presentation state created from that destination.
     func showScreen<T: View>(_ option: SegueOption, @ViewBuilder destination: @escaping (any Router) -> T)
     
     /// Dismisses the current presentation context.
@@ -34,6 +39,9 @@ public protocol Router {
     /// This API targets only routed modal containers created with `.sheet` or
     /// `.fullScreenCover`. It does not dismiss lightweight overlays shown with
     /// `showModal()`, and it is a no-op when no ancestor routed modal exists.
+    ///
+    /// Use this only from a pushed child that needs to close the first ancestor routed modal
+    /// while keeping push semantics explicit.
     func dismissAncestorModal()
 
     /// Removes the top-most destination from the current push stack.
@@ -96,26 +104,37 @@ public extension Router {
     /// Default no-op implementation so additive protocol evolution stays source-compatible.
     func dismissAncestorModal() {
         #if DEBUG
-        debugPrint("dismissAncestorModal() is unavailable for this Router conformer.")
+        RouterDiagnostics.emit(
+            RouterDiagnostics.unsupportedAncestorModalDismissalMessage(
+                conformer: String(reflecting: Self.self)
+            )
+        )
         #endif
     }
 
-    /// Convenience wrapper for removing a single pushed destination.
+    /// Removes a single pushed destination from the current stack.
     func pop() {
         pop(count: 1)
     }
 
-    /// Convenience wrapper for presenting an alert without a subtitle or custom actions.
+    /// Presents an alert or confirmation dialog without custom actions or secondary text.
     func showAlert(_ option: AlertType, title: String, subtitle: String? = nil, buttons: (@Sendable () -> AnyView)? = nil) {
         showAlert(option, title: title, subtitle: subtitle, buttons: buttons)
     }
     
-    /// Convenience wrapper for presenting an error alert without custom actions.
+    /// Presents an error alert without custom actions.
     func showErrorAlert(error: any Error, buttons: (@Sendable () -> AnyView)? = nil) {
         showErrorAlert(error: error, buttons: buttons)
     }
     
-    /// Convenience wrapper for presenting a custom overlay with package defaults.
+    /// Presents a lightweight overlay using the package's default presentation configuration.
+    ///
+    /// - Parameters:
+    ///   - backgroundColor: The overlay background color. The default is a semi-opaque black.
+    ///   - backgroundTransition: The transition applied to the overlay background.
+    ///   - animation: The animation used when the overlay appears or disappears.
+    ///   - backgroundTapDismissesModal: A Boolean value indicating whether tapping the background dismisses the overlay.
+    ///   - screen: A builder that creates the overlay content.
     func showModal<T>(
         backgroundColor: Color = Color.black.opacity(0.6),
         backgroundTransition: AnyTransition = .opacity.animation(.smooth),
@@ -142,48 +161,75 @@ public extension EnvironmentValues {
     /// The default `MockRouter` prevents runtime crashes when a view is rendered outside a routed
     /// context, for example in previews or isolated tests. Production code should expect a real
     /// router injected by `RouterView`.
+    ///
+    /// Feature views can read this environment value directly, while larger applications can still
+    /// prefer explicit dependency passing if they want tighter composition boundaries.
     @Entry var router: Router = MockRouter()
 }
 
 /// Fallback router used when a view reads `EnvironmentValues.router` outside `RouterView`.
+enum RouterDiagnostics {
+    static func missingRouterMessage(action: String) -> String {
+        """
+        ACRouting MockRouter intercepted \(action). This usually means a view read @Environment(\\.router) outside RouterView. Wrap that flow in RouterView or pass a real Router explicitly.
+        """
+    }
+
+    static func unsupportedAncestorModalDismissalMessage(conformer: String) -> String {
+        """
+        dismissAncestorModal() is unavailable for Router conformer \(conformer). Provide a custom implementation if that conformer should support ancestor modal dismissal.
+        """
+    }
+
+    static func emit(_ message: String) {
+        #if DEBUG
+        debugPrint(message)
+        #endif
+    }
+}
+
 struct MockRouter: Router {
+    private func report(_ action: String) {
+        RouterDiagnostics.emit(RouterDiagnostics.missingRouterMessage(action: action))
+    }
+
     func showScreen<T: View>(
         _ option: SegueOption,
         @ViewBuilder destination: @escaping (any Router) -> T
     ) {
-        print("MockRouter does not work")
+        report("showScreen(_:destination:)")
     }
     
     func dismissScreen() {
-        print("MockRouter does not work")
+        report("dismissScreen()")
     }
 
     func dismissAncestorModal() {
-        print("MockRouter does not work")
+        report("dismissAncestorModal()")
     }
 
     func pop() {
-        print("MockRouter does not work")
+        report("pop()")
     }
 
     func pop(count: Int) {
-        print("MockRouter does not work")
+        report("pop(count:)")
     }
 
     func popToRoot() {
-        print("MockRouter does not work")
+        report("popToRoot()")
     }
     
     func showAlert(_ option: AlertType, title: String, subtitle: String?, buttons: (@Sendable () -> AnyView)?) {
-        print("MockRouter does not work")
+        report("showAlert(_:title:subtitle:buttons:)")
     }
     
     func showErrorAlert(error: any Error, buttons: (@Sendable () -> AnyView)? = nil) {
-        print("MockRouter does not work")
+        report("showErrorAlert(error:buttons:)")
     }
     
     func dismissAlert() {
-        print("MockRouter does not work")
+        report("dismissAlert()")
     }
     
     func showModal<T>(
@@ -193,10 +239,10 @@ struct MockRouter: Router {
         backgroundTapDismissesModal: Bool = true,
         screen: @escaping () -> T
     ) where T : View {
-        print("MockRouter does not work")
+        report("showModal(backgroundColor:backgroundTransition:animation:backgroundTapDismissesModal:screen:)")
     }
     
     func dismissModal() {
-        print("MockRouter does not work")
+        report("dismissModal()")
     }
 }

@@ -134,6 +134,117 @@ private final class DefaultPopForwardingRouter: Router {
     func dismissModal() {}
 }
 
+@MainActor
+private protocol BuilderDrivenFeatureRouting {
+    func showPushedDetail(id: Int)
+    func showSheet()
+    func showFullScreen()
+    func showOverlay()
+}
+
+@MainActor
+private final class BuilderDrivenFeatureBuilder {
+    private(set) var builtScreens: [String] = []
+
+    func makeDetail(id: Int, router: any BuilderDrivenFeatureRouting) -> some View {
+        builtScreens.append("detail:\(id)")
+        return Text("Detail \(id)")
+    }
+
+    func makeSheet(router: any BuilderDrivenFeatureRouting) -> some View {
+        builtScreens.append("sheet")
+        return Text("Sheet")
+    }
+
+    func makeFullScreen(router: any BuilderDrivenFeatureRouting) -> some View {
+        builtScreens.append("fullScreen")
+        return Text("Full screen")
+    }
+
+    func makeOverlay() -> some View {
+        builtScreens.append("overlay")
+        return Text("Overlay")
+    }
+}
+
+@MainActor
+private final class DestinationCapturingRouter: Router {
+    struct CapturedScreenCall {
+        let option: SegueOption
+        let destination: (any Router) -> AnyView
+    }
+
+    private(set) var screenCalls: [CapturedScreenCall] = []
+    private(set) var overlayBuilders: [() -> AnyView] = []
+
+    func showScreen<T: View>(_ option: SegueOption, @ViewBuilder destination: @escaping (any Router) -> T) {
+        screenCalls.append(
+            CapturedScreenCall(
+                option: option,
+                destination: { AnyView(destination($0)) }
+            )
+        )
+    }
+
+    func dismissScreen() {}
+
+    func pop() {}
+
+    func pop(count: Int) {}
+
+    func popToRoot() {}
+
+    func showAlert(_ option: AlertType, title: String, subtitle: String?, buttons: (@Sendable () -> AnyView)?) {}
+
+    func showErrorAlert(error: any Error, buttons: (@Sendable () -> AnyView)?) {}
+
+    func dismissAlert() {}
+
+    func showModal<T>(
+        backgroundColor: Color,
+        backgroundTransition: AnyTransition,
+        animation: Animation,
+        backgroundTapDismissesModal: Bool,
+        screen: @escaping () -> T
+    ) where T: View {
+        overlayBuilders.append { AnyView(screen()) }
+    }
+
+    func dismissModal() {}
+}
+
+private struct BuilderDrivenFeatureRouterAdapter: BuilderDrivenFeatureRouting {
+    let router: any Router
+    let builder: BuilderDrivenFeatureBuilder
+
+    func showPushedDetail(id: Int) {
+        router.showScreen(.push) { router in
+            let featureRouter = BuilderDrivenFeatureRouterAdapter(router: router, builder: builder)
+            builder.makeDetail(id: id, router: featureRouter)
+        }
+    }
+
+    func showSheet() {
+        router.showScreen(.sheet) { router in
+            let featureRouter = BuilderDrivenFeatureRouterAdapter(router: router, builder: builder)
+            builder.makeSheet(router: featureRouter)
+        }
+    }
+
+    func showFullScreen() {
+        router.showScreen(.fullScreenCover) { router in
+            let featureRouter = BuilderDrivenFeatureRouterAdapter(router: router, builder: builder)
+            builder.makeFullScreen(router: featureRouter)
+        }
+    }
+
+    func showOverlay() {
+        router.showModal {
+            builder.makeOverlay()
+        }
+    }
+}
+
 // MARK: - Router Protocol Default Parameter Tests
 
 @Suite("Router protocol defaults")
@@ -320,6 +431,78 @@ struct RouterCallDispatchTests {
     }
 }
 
+@Suite("Builder-first router adapters")
+@MainActor
+struct BuilderFirstRouterAdapterTests {
+
+    @Test("Push adapter keeps builder-owned assembly deferred until destination rendering")
+    func pushAssemblyIsDeferred() {
+        let router = DestinationCapturingRouter()
+        let builder = BuilderDrivenFeatureBuilder()
+        let featureRouter = BuilderDrivenFeatureRouterAdapter(router: router, builder: builder)
+
+        featureRouter.showPushedDetail(id: 42)
+
+        #expect(router.screenCalls.count == 1)
+        #expect(router.screenCalls[0].option == .push)
+        #expect(builder.builtScreens.isEmpty)
+
+        let _: AnyView = router.screenCalls[0].destination(MockRouter())
+
+        #expect(builder.builtScreens == ["detail:42"])
+    }
+
+    @Test("Sheet adapter keeps builder-owned assembly deferred until destination rendering")
+    func sheetAssemblyIsDeferred() {
+        let router = DestinationCapturingRouter()
+        let builder = BuilderDrivenFeatureBuilder()
+        let featureRouter = BuilderDrivenFeatureRouterAdapter(router: router, builder: builder)
+
+        featureRouter.showSheet()
+
+        #expect(router.screenCalls.count == 1)
+        #expect(router.screenCalls[0].option == .sheet)
+        #expect(builder.builtScreens.isEmpty)
+
+        let _: AnyView = router.screenCalls[0].destination(MockRouter())
+
+        #expect(builder.builtScreens == ["sheet"])
+    }
+
+    @Test("Full-screen adapter keeps builder-owned assembly deferred until destination rendering")
+    func fullScreenAssemblyIsDeferred() {
+        let router = DestinationCapturingRouter()
+        let builder = BuilderDrivenFeatureBuilder()
+        let featureRouter = BuilderDrivenFeatureRouterAdapter(router: router, builder: builder)
+
+        featureRouter.showFullScreen()
+
+        #expect(router.screenCalls.count == 1)
+        #expect(router.screenCalls[0].option == .fullScreenCover)
+        #expect(builder.builtScreens.isEmpty)
+
+        let _: AnyView = router.screenCalls[0].destination(MockRouter())
+
+        #expect(builder.builtScreens == ["fullScreen"])
+    }
+
+    @Test("Overlay adapter keeps builder-owned assembly deferred until overlay rendering")
+    func overlayAssemblyIsDeferred() {
+        let router = DestinationCapturingRouter()
+        let builder = BuilderDrivenFeatureBuilder()
+        let featureRouter = BuilderDrivenFeatureRouterAdapter(router: router, builder: builder)
+
+        featureRouter.showOverlay()
+
+        #expect(router.overlayBuilders.count == 1)
+        #expect(builder.builtScreens.isEmpty)
+
+        let _: AnyView = router.overlayBuilders[0]()
+
+        #expect(builder.builtScreens == ["overlay"])
+    }
+}
+
 // MARK: - MockRouter Tests
 
 @Suite("MockRouter")
@@ -349,5 +532,24 @@ struct MockRouterTests {
         mock.dismissAlert()
         mock.showModal { Text("Modal") }
         mock.dismissModal()
+    }
+
+    @Test("Missing-router diagnostics explain how to inject a real router")
+    func missingRouterDiagnosticIsActionable() {
+        let message = RouterDiagnostics.missingRouterMessage(action: "dismissScreen()")
+
+        #expect(message.contains("dismissScreen()"))
+        #expect(message.contains("@Environment(\\.router)"))
+        #expect(message.contains("RouterView"))
+        #expect(message.contains("real Router"))
+    }
+
+    @Test("Unsupported ancestor modal diagnostic names the conformer")
+    func unsupportedAncestorModalDiagnosticNamesConformer() {
+        let message = RouterDiagnostics.unsupportedAncestorModalDismissalMessage(conformer: "ExampleRouter")
+
+        #expect(message.contains("dismissAncestorModal()"))
+        #expect(message.contains("ExampleRouter"))
+        #expect(message.contains("custom implementation"))
     }
 }

@@ -15,6 +15,7 @@ out of feature views and centralize transitions behind a single `Router` API.
 
 - Single routing abstraction for push, sheet, full screen, alert, and custom modal.
 - No direct `NavigationStack` management inside feature screens.
+- Builder-first friendly: the app can keep screen assembly in builders, factories, or a composition root.
 - Router access can be done via environment injection or explicit dependency
   passing.
 - Presented destinations are wrapped in `RouterView` so routing remains available
@@ -44,7 +45,7 @@ Notes:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/antoniocasto/ACRouting.git", from: "1.4.2")
+    .package(url: "https://github.com/antoniocasto/ACRouting.git", from: "1.4.3")
 ],
 targets: [
     .target(
@@ -78,7 +79,7 @@ struct DemoApp: App {
 
 ### 2) Pick your router access style
 
-Environment injection is supported and convenient, but not mandatory.
+Environment injection is supported and convenient, but not mandatory. Inline destination builders are fine for small flows, while larger apps can keep screen assembly outside `ACRouting` through app-owned builders or factories.
 
 #### Option A: Environment (`@Environment(\.router)`)
 
@@ -147,6 +148,69 @@ struct HomeView: View {
 }
 ```
 
+#### Option C: Builder-owned screen assembly
+
+`ACRouting` owns navigation state. Your app can keep screen assembly in builders and expose only an app-owned router interface to feature screens.
+
+```swift
+import SwiftUI
+import ACRouting
+
+protocol CatalogRouting {
+    func showProfile(userID: UUID)
+    func showSettings()
+}
+
+struct CatalogBuilder {
+    func makeHomeScreen(router: any CatalogRouting) -> some View {
+        CatalogHomeView(router: router)
+    }
+
+    func makeProfileScreen(userID: UUID, router: any CatalogRouting) -> some View {
+        ProfileView(userID: userID, router: router)
+    }
+
+    func makeSettingsScreen(router: any CatalogRouting) -> some View {
+        SettingsView(router: router)
+    }
+}
+
+struct CatalogRouterAdapter: CatalogRouting {
+    let acRouter: any Router
+    let builder: CatalogBuilder
+
+    func showProfile(userID: UUID) {
+        acRouter.showScreen(.push) { router in
+            let appRouter = CatalogRouterAdapter(acRouter: router, builder: builder)
+            builder.makeProfileScreen(userID: userID, router: appRouter)
+        }
+    }
+
+    func showSettings() {
+        acRouter.showScreen(.sheet) { router in
+            let appRouter = CatalogRouterAdapter(acRouter: router, builder: builder)
+            builder.makeSettingsScreen(router: appRouter)
+        }
+    }
+}
+
+@main
+struct DemoApp: App {
+    private let builder = CatalogBuilder()
+
+    var body: some Scene {
+        WindowGroup {
+            RouterView { router in
+                let appRouter = CatalogRouterAdapter(acRouter: router, builder: builder)
+                builder.makeHomeScreen(router: appRouter)
+            }
+        }
+    }
+}
+```
+
+This pattern keeps `ACRouting` focused on pushes, modal presentation, and dismissal semantics while your app continues to own screen assembly.
+
 ### 3) Dismiss current context
 
 ```swift
@@ -202,7 +266,7 @@ Button("Back to root") {
 - `.sheet`: presents a new modal navigation context with its own routed flow.
 - `.fullScreenCover`: presents a fullscreen modal navigation context on iOS and a sheet-backed equivalent on macOS.
 
-## Supported Modal Layering in `1.4.2`
+## Supported Modal Layering in `1.4.3`
 
 First-class supported flows:
 - Root flow with push navigation.
@@ -278,6 +342,7 @@ Notes:
 - `RouterView` is both a `View` and a `Router`.
 - Child destinations are wrapped again in `RouterView`, so every screen still has
   access to a router.
+- App-owned builders, factories, or router adapters can keep screen assembly outside `ACRouting`.
 - Push navigation uses a shared destination stack where appropriate.
 - Sheet/fullscreen routes create a fresh navigation context for the presented
   flow.
@@ -290,7 +355,7 @@ Notes:
 - `dismissScreen()` remains available as a compatibility API and delegates to explicit pop behavior for pushed destinations.
 - `dismissAncestorModal()` lets a pushed child explicitly close its first ancestor routed modal without changing `dismissScreen()` semantics.
 - Routed `.sheet` and `.fullScreenCover` state now share one internal presentation model, while `showModal` intentionally stays a separate overlay API instead of another routed modal container.
-- If a view reads `@Environment(\.router)` outside `RouterView`, the default fallback is a `MockRouter` that avoids crashes but does not perform real navigation.
+- If a view reads `@Environment(\.router)` outside `RouterView`, the default fallback is a `MockRouter` that avoids crashes and emits debug guidance explaining how to inject a real router.
 
 ## Internal Preview Catalog
 
@@ -299,6 +364,7 @@ The package now includes a debug-only preview catalog for local exploration in X
 - File: [`Sources/ACRouting/Previews/ACRoutingPreviewCatalog.swift`](Sources/ACRouting/Previews/ACRoutingPreviewCatalog.swift)
 - Scope:
   - explicit push-stack control
+  - builder-first integration through an app-owned router adapter
   - sheet and full-screen modal roots
   - alert and overlay semantics
   - a realistic mixed checkout-style flow built only from currently supported APIs
