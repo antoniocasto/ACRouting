@@ -8,7 +8,12 @@
 import SwiftUI
 
 public extension View {
-    /// Type-erases the current view so heterogeneous routed destinations can share one collection.
+    /// Type-erases the current view.
+    ///
+    /// `ACRouting` uses this helper internally so heterogeneous routed destinations can share one
+    /// push stack or presentation slot without exposing view-type details.
+    ///
+    /// - Returns: An `AnyView` wrapping the current view.
     nonisolated func any() -> AnyView {
         AnyView(self)
     }

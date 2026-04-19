@@ -7,12 +7,14 @@
 
 import Foundation
 
-/// Supported presentation styles for `Router.showScreen`.
+/// The routed presentation styles supported by ``Router/showScreen(_:destination:)``.
 public enum SegueOption {
     /// Pushes the destination onto the current routed navigation stack.
     case push
+
     /// Presents the destination in a sheet with a fresh routed navigation context.
     case sheet
+
     /// Presents the destination in a full-screen cover with a fresh routed navigation context.
     case fullScreenCover
 
