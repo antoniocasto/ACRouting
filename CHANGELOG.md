@@ -7,6 +7,11 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- The hosted DocC homepage now surfaces the current package version and the README credits directly in the published documentation.
+- The README now links more explicitly to the public documentation site at `https://acrouting.acasto.dev`.
+
 ## [1.4.3] - 2026-04-19
 
 ### Added
