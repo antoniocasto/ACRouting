@@ -9,12 +9,25 @@ Build predictable SwiftUI navigation flows while keeping screen assembly in your
 - ``RouterView`` owns the routing runtime for one flow.
 - ``Router`` exposes navigation commands to the screens inside that flow.
 
+## Current Package Version
+
+The currently documented public package release is `1.4.3`.
+
+The hosted documentation at [acrouting.acasto.dev](https://acrouting.acasto.dev) is published from `main`, while this version marker reflects the latest tagged package release that includes the current public API surface.
+
 The package intentionally separates responsibilities:
 
 - `ACRouting` owns navigation state, push semantics, routed modal presentation, overlays, and alert state.
 - Your app remains free to assemble screens through builders, factories, or composition-root logic.
 
 This makes the package a good fit for both small SwiftUI apps and larger codebases that want explicit composition boundaries.
+
+## Credits
+
+This package was built while following the **SwiftUI Advanced Architectures** course by [Nick Sarno](https://github.com/SwiftfulThinking).
+
+- YouTube: [@SwiftfulThinking](https://www.youtube.com/@SwiftfulThinking)
+- Course: SwiftUI Advanced Architectures
 
 ## Builder-First By Default
 
