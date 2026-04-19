@@ -2,7 +2,9 @@
 
 ## Goal
 
-Make `ACRouting` a dependable SwiftUI navigation package for production apps, with deterministic state, additive API evolution through `v1.x`, and a clear path toward typed routes, deep links, and restoration.
+Make `ACRouting` a dependable SwiftUI navigation package for production apps that owns navigation state and presentation behavior while application builders remain responsible for assembling screens and modules.
+
+Through `v1.x`, the package should keep navigation deterministic, stay additive, document the real builder-first integration model clearly, and add future deep-link or restoration support only in ways that preserve app-owned screen assembly.
 
 ## Locked Decisions
 
@@ -12,8 +14,19 @@ This roadmap is intended to be the default planning source for future Codex chat
 - `v1.x` stays additive-first; breaking cleanup waits for `v2.0.0`.
 - `iOS 16 / macOS 13` remain the deployment floor until explicitly changed.
 - The routing core must not require Observation APIs while that deployment floor remains.
-- New public APIs should prefer SwiftUI-native semantics and avoid introducing new `AnyView`-based surfaces.
+- `ACRouting` owns navigation state and transition behavior, not feature or module assembly.
+- Application builders remain responsible for creating screens, presenters, interactors, and module-specific routers.
+- The package must not require a package-owned global route-to-view registry in the core.
 - Environment injection and explicit router passing are both supported patterns.
+- Multiple independent `RouterView` contexts, such as tab roots, are first-class supported integration patterns.
+- Any future data-driven or typed navigation inputs must carry serializable navigation intent only, never concrete `View` types or module dependencies.
+
+## Architectural Contract
+
+- `ACRouting` owns push-stack state, routed sheet/full-screen state, overlay state, alert state, and dismissal or pop semantics.
+- The application owns screen assembly through builders, factories, or equivalent composition-root mechanisms.
+- Feature screens should usually depend on an app-owned router adapter that decides which builder method to call and then uses `ACRouting` to present the resulting screen.
+- Future deep-link and restoration flows must rebuild navigation by asking app-owned builders or resolvers to recreate screens, not by moving assembly into `ACRouting`.
 
 ## Current Assessment
 
@@ -21,134 +34,117 @@ This roadmap is intended to be the default planning source for future Codex chat
 
 - A single `Router` abstraction keeps navigation concerns out of feature views.
 - `RouterView` re-wraps destinations so routing stays available across pushed and presented flows.
-- The package already covers the most common presentation styles: push, sheet, full screen, alert, and custom overlay modal.
-- Push navigation is now state-driven through explicit stack APIs: `pop()`, `pop(count:)`, and `popToRoot()`.
+- The current closure-based API already fits builder-first integration naturally because the app decides what to build inside each `showScreen` or `showModal` call.
+- The package covers the most common presentation styles: push, sheet, full screen, alert, and custom overlay modal.
+- Push navigation is state-driven through explicit stack APIs: `pop()`, `pop(count:)`, and `popToRoot()`.
 - Inherited push-stack ownership is now explicit instead of being inferred from empty-stack heuristics.
 - Routed `.sheet` and `.fullScreenCover` presentations now share one internal presentation state.
-- Pushed child flows can now dismiss their first ancestor routed sheet or full-screen cover explicitly through `dismissAncestorModal()`.
-- The package now has behavior-level regression tests for push-stack mutation and protocol forwarding.
+- Pushed child flows can dismiss their first ancestor routed sheet or full-screen cover explicitly through `dismissAncestorModal()`.
+- The package already supports multiple independent `RouterView` contexts, which matches tab-based and feature-scoped app architectures well.
 - A debug-only preview catalog exists for local Xcode exploration of real package flows and current limits.
+
+### Current supported behavior in `v1.4.2`
+
+- Root flow with push navigation.
+- One routed `.sheet` flow with its own local push stack.
+- One routed `.fullScreenCover` flow with its own local push stack.
+- A lightweight `showModal` overlay inside the current router context, including root, pushed, sheet-root, or full-screen-root screens.
+- A pushed child inside one routed `.sheet` or `.fullScreenCover` flow calling `dismissAncestorModal()` to close that first ancestor routed modal.
 
 ### Current gaps to address first
 
-- Routed sheet/full-screen presentation is normalized, but `showModal` intentionally remains a separate overlay-only mechanism.
-- Modal layering support is intentionally narrow in `v1.4.2` and must stay documented as such.
-- Public API naming is workable, but symbols such as `showScreen` and `SegueOption` are not yet as fluent or Swift-native as they should be for a public package.
-- The current model leans on `AnyView` and `AnyDestination`, which keeps it flexible but blocks stronger typed flows for routes, deep links, and restoration.
+- The roadmap and docs still over-index on typed routing inside the package core instead of documenting the builder-first integration model consumers actually use.
+- Public examples do not yet show app-owned router adapters or builder-orchestrated screen assembly as first-class patterns.
 - Missing-router behavior is safe, but diagnostics are still lightweight and could do more than the current `MockRouter` fallback.
-- The test suite is much better than before, but mixed modal-plus-push behavior still needs broader coverage before typed routing arrives.
+- The test suite is much stronger than before, but it still under-documents builder-assembled flows and multi-context integration patterns.
+- `AnyView` and `AnyDestination` still limit future state serialization and reconstruction work, but any cleanup in this area must preserve builder-owned assembly.
+- Deep-link and restoration boundaries are not yet defined around app-owned builders or resolvers.
 
 ## Priorities
 
-### 1. Normalize Modal and Presentation State
+### 1. Document and Harden the Builder-First Integration Model
 
 Priority: High
 
-- Keep routed `.sheet` and `.fullScreenCover` presentation under one normalized state in `v1.x`.
-- Document which modal layering combinations are supported and which are intentionally out of scope.
-- Keep `showModal` as a separate overlay-only mechanism in `v1.x`, not another routed modal container.
-- Move future routed presentation APIs toward enum-driven or item-driven modeling rather than parallel presentation slots.
-- Keep macOS behavior aligned with the public API while documenting any platform-specific fallback rules.
-- Keep ancestor modal dismissal additive and limited to the first ancestor routed sheet or full-screen cover.
+- Make builder-owned screen assembly an explicit product decision in the roadmap, README, and examples.
+- Publish guidance for app-owned router adapters that translate feature intents into builder calls plus `ACRouting` commands.
+- Keep the closure-based presentation APIs first-class throughout `v1.x`.
+- Clarify support for multiple independent `RouterView` contexts and their ownership boundaries.
 
 Why it matters:
-The package already has a deterministic push stack, but modal semantics are still spread across separate storage slots and implicit container rules. Typed routing and deeper flow reconstruction should build on a normalized presentation model rather than on parallel ad hoc state.
+This is how real consumers already use the package. The roadmap and docs should match that reality before more feature work is layered on top.
 
 ### 2. Expand Behavior-Level Test Coverage
 
 Priority: High
 
-- Add tests that verify mixed push-plus-modal flows, not just pure push behavior.
-- Cover the current limits explicitly so unsupported behavior is documented and protected from accidental drift.
-- Require each feature-bearing release to ship its own behavior tests.
-- Add parity tests whenever a new API is introduced alongside a legacy one.
+- Add tests that verify builder-assembled push, sheet, full-screen, overlay, and ancestor modal dismissal flows.
+- Add coverage for multiple independent `RouterView` contexts such as tab roots.
+- Cover current limits explicitly so unsupported behavior is documented and protected from accidental drift.
+- Require each feature-bearing release to ship with behavior tests.
 
 Why it matters:
-Navigation regressions are usually behavioral, not syntactic. The current suite is much stronger than before, but modal interaction rules still need more coverage before more feature families are layered on top.
+Navigation regressions are behavioral. Tests should protect the real integration patterns package consumers rely on, not only isolated core mechanics.
 
-### 3. Improve Public API Ergonomics and Documentation
+### 3. Improve Public API Ergonomics and Diagnostics
 
 Priority: High
 
-- Refine future public APIs toward fluent Swift call sites, role-based labels, and concise documentation comments.
+- Refine public APIs toward fluent Swift call sites, role-based labels, and concise documentation comments where additive improvements are useful.
 - Keep both router access styles first-class: environment injection and explicit passing.
 - Add preview-safe diagnostics and clearer guidance for missing router injection.
 - Keep the local preview catalog aligned with current behavior rather than aspirational flows.
-- Publish examples that demonstrate intended usage patterns instead of relying on implementation details.
 
 Why it matters:
-For a public package, ergonomics and documentation are part of the product surface. The package now has a better internal study aid, but public docs and diagnostics still need to close the gap between implementation details and intended usage.
+For a public package, ergonomics and diagnostics are part of the product surface. Better guidance reduces integration mistakes without forcing new architecture.
 
-### 4. Introduce Typed Push Routing
+### 4. Define Deep-Link and Restoration Boundaries Around App-Owned Builders
 
 Priority: Medium
 
-- Add additive typed push routes without removing the current destination-builder model.
-- Support route-to-view registration for pushed destinations.
-- Keep the legacy API working through `v1.x` while typed push flows mature.
+- Design additive APIs that can accept serializable navigation intent or payload values without moving screen assembly into `ACRouting`.
+- Define how app-owned builders or resolvers recreate screens when those payloads need to be rendered.
+- Document failure behavior for unsupported, partial, or invalid inputs.
 
 Why it matters:
-Typed push routing is the first meaningful step away from a view-erased navigation core. It should arrive only after deterministic state and better tests exist, so its semantics are built on stable behavior.
+Deep links and restoration are still valuable goals, but they must fit the builder-first contract instead of bypassing it.
 
-### 5. Introduce Typed Modal Routing
+### 5. Reduce View-Erased Internals Only When It Helps Deterministic State
 
 Priority: Medium
 
-- Extend typed routing to sheets, full-screen covers, and overlay presentation state.
-- Keep typed modal routing separate from typed push routing in release planning.
-- Define how typed modal routes coordinate with an already-pushed stack.
+- Prefer more data-driven internal state where it improves testing, restoration readiness, or deterministic behavior.
+- Avoid turning internal cleanup into a public requirement for package-owned route registries or view factories.
+- Keep current closure-based APIs supported while internals evolve.
 
 Why it matters:
-Push routing and modal routing have different lifecycle rules. Splitting them into separate milestones keeps the implementation smaller, the public API clearer, and the migration path easier to test.
+Internal cleanup still matters, but not at the cost of architectural boundaries that package consumers depend on.
 
-### 6. Add Deep-Link Entry Points
-
-Priority: Medium
-
-- Add APIs to build typed push stacks from route values or URL payloads.
-- Support reconstructing entry flows without requiring callers to build `AnyView` destinations manually.
-- Document resolver rules and failure behavior for unsupported inputs.
-
-Why it matters:
-Deep-link support should consume typed routing, not bypass it. Once typed routes exist, deep links can be implemented as another way to build navigation state rather than as a separate navigation model.
-
-### 7. Add Restoration
-
-Priority: Medium
-
-- Persist and rebuild typed push and presentation state after relaunch.
-- Add round-trip tests for restoration of supported flows.
-- Keep restoration scoped to routes and presentation state, not arbitrary view reconstruction.
-
-Why it matters:
-Restoration depends on deterministic, typed state. It should arrive only after the route model and modal coordination rules are stable enough to serialize and rebuild safely.
-
-### 8. Keep Platform Metadata, SemVer Guidance, and Examples Aligned
+### 6. Keep Platform Metadata, SemVer Guidance, and Examples Aligned
 
 Priority: Continuous
 
 - Keep README, roadmap, release notes, and package metadata aligned with the actual implementation.
 - Document semantic versioning expectations alongside the roadmap.
-- Expand examples as each routing family becomes real, not in advance of implementation.
+- Expand examples only when a behavior or pattern is truly supported.
 
 Why it matters:
-Drift between docs, metadata, and behavior creates adoption risk. Keeping these aligned continuously is lower risk than trying to correct them in a large cleanup later.
+Drift between docs, metadata, and behavior creates adoption risk. Keeping them aligned continuously is lower risk than correcting them in a large cleanup later.
 
 ## Release Policy
 
 - Patch releases are for documentation updates, compatibility fixes, regression fixes, and internal hardening that does not introduce a new public feature family.
-- Minor releases are for additive public capabilities that expand the routing surface without forcing migration.
-- `v2.0.0` is reserved for cleanup that removes or de-emphasizes legacy APIs after additive replacements exist and are documented.
+- Minor releases are for additive public capabilities or integration surfaces that expand the routing package without forcing migration.
+- `v2.0.0` is reserved for cleanup that removes or de-emphasizes legacy APIs only after additive replacements exist and are documented.
 
 ## Planned Design Checkpoints
 
-The following milestones should not be treated as "implement immediately" items when reached. They each require a short design pass first, because the implementation direction is not fully locked yet.
+The following milestones should not be treated as "implement immediately" items when reached. They each require a short design pass first because the implementation direction is not fully locked yet.
 
-- `v1.4.2`: modal semantics, ancestor modal dismissal, and supported modal layering rules.
-- `v1.5.0`: typed push route modeling, route registration, and coexistence with the legacy builder API.
-- `v1.6.0`: typed modal route modeling and coordination between modal state and an already-pushed stack.
-- `v1.7.0`: deep-link resolver inputs, failure behavior, and stack construction rules.
-- `v1.9.0`: restoration serialization format, compatibility rules, and scope boundaries.
+- `v1.4.3`: builder-first architecture sync, adapter examples, diagnostics, and regression coverage for real-world integration patterns.
+- `v1.5.0`: deep-link input modeling, builder or resolver handoff, and supported failure behavior.
+- `v1.6.0`: restoration payload format, compatibility rules, and reconstruction boundaries across supported router contexts.
+- `v1.7.0`: optional navigation-intent helpers for app-owned routers, only if they provide value without moving assembly into the package.
 - `v2.0.0`: migration strategy, naming cleanup, and legacy API de-emphasis timing.
 
 ## Suggested Release Sequence
@@ -160,7 +156,7 @@ The following milestones should not be treated as "implement immediately" items 
 - Do not add new routing behavior in this release.
 
 Why this version:
-This release aligns documentation with reality so later work has a clean baseline.
+This release aligned documentation with reality so later work had a cleaner baseline.
 
 ### v1.4.0
 
@@ -171,7 +167,7 @@ This release aligns documentation with reality so later work has a clean baselin
 - Keep `dismissScreen()` supported, but document that explicit stack APIs are preferred for push flows.
 
 Why this version:
-This is the first release that should expose new public navigation-control APIs.
+This was the first release that exposed new public navigation-control APIs.
 
 ### v1.4.1
 
@@ -181,7 +177,7 @@ This is the first release that should expose new public navigation-control APIs.
 - Keep roadmap, changelog, and package guidance aligned with the branch reality.
 
 Why this version:
-Once the first explicit stack APIs ship, the package needs stronger study material and better documentation before another feature family is added.
+Once the first explicit stack APIs shipped, the package needed stronger study material and better documentation before another feature family was added.
 
 ### v1.4.2
 
@@ -190,143 +186,125 @@ Once the first explicit stack APIs ship, the package needs stronger study materi
 - Add additive ancestor modal dismissal API support in `v1.x`.
 - Expand mixed-flow regression coverage only.
 
-Already decided:
-- `dismissAncestorModal()` is the additive API name for dismissing the first ancestor routed modal from a pushed child flow.
-- The API targets only the first ancestor `sheet` or `fullScreenCover`.
-- `showModal` overlays are explicitly out of scope for this API.
-- `showModal` remains a separate overlay-only mechanism in `v1.x`; it does not participate in routed modal normalization.
-- Calls made without an ancestor routed modal should be a no-op with debug-only diagnostics.
-- `dismissScreen()` keeps its current semantics and does not dismiss ancestor modals implicitly.
-- `v1.4.2` support and regression coverage are currently scoped to one ancestor routed modal at a time.
+Already implemented:
 
-Already implemented on this branch:
-- `dismissAncestorModal()` is implemented additively without changing `dismissScreen()` semantics.
-- Routed `.sheet` and `.fullScreenCover` presentations now share one internal routed modal presentation state instead of separate ad hoc storage slots.
-- Mixed-flow regression coverage now includes pushed-child ancestor modal dismissal, modal-root no-op behavior, and separation between `dismissScreen()` and `dismissAncestorModal()`.
+- `dismissAncestorModal()` is additive and does not change `dismissScreen()` semantics.
+- Routed `.sheet` and `.fullScreenCover` presentations share one internal routed modal presentation state instead of separate ad hoc storage slots.
+- Mixed-flow regression coverage includes pushed-child ancestor modal dismissal, modal-root no-op behavior, and separation between `dismissScreen()` and `dismissAncestorModal()`.
 - External `Router` conformers remain source-compatible through a default no-op implementation of `dismissAncestorModal()`.
-- Routed modal presentation state is wrapped behind a dedicated internal modifier, while `showModal` remains a separate overlay-only mechanism.
-
-Supported and regression-covered flow shapes in `v1.4.2`:
-- Root flow with push navigation.
-- One routed `.sheet` flow with its own local push stack.
-- One routed `.fullScreenCover` flow with its own local push stack.
-- A lightweight `showModal` overlay inside the current router context, including inside root, pushed, sheet-root, or full-screen-root screens.
-- A pushed child inside one routed `.sheet` or `.fullScreenCover` flow calling `dismissAncestorModal()` to close that first ancestor routed modal.
-
-Explicitly out of scope in `v1.4.2`:
-- Guaranteeing behavior for more than one ancestor routed modal in the same presentation chain.
-- Treating `showModal` overlays as routed modal containers or dismiss targets for `dismissAncestorModal()`.
-- Promising first-class support for presenting one routed sheet/full-screen container from inside another routed sheet/full-screen container.
+- `showModal` remains a separate overlay-only mechanism in `v1.x`.
 
 Why this version:
-This keeps modal semantics cleanup separate from typed-routing work and gives the package a cleaner base for later route typing.
+This kept modal semantics cleanup separate from later roadmap work and gave the package a cleaner base for the next planning step.
 
-### v1.5.0
+### v1.4.3
 
-- Typed push routing release.
-- Introduce additive typed push routes and route-to-view registration for pushed destinations.
-- Keep legacy destination-builder APIs supported.
+- Builder-first integration release.
+- Rewrite the public roadmap, README guidance, and examples so builder-owned screen assembly is the documented default integration model.
+- Publish at least one explicit example of an app-owned router adapter that delegates screen creation to builders while using `ACRouting` for presentation.
+- Expand regression coverage for builder-assembled push, sheet, full-screen, overlay, and multi-`RouterView` flows.
+- Improve missing-router diagnostics and preview-safe guidance without changing the architecture.
+- Do not add package-owned typed routing or core route registration in this release.
 
 Needs deeper design before implementation:
-- the route model shape, including associated data and hashing requirements
-- how route-to-view registration is declared and scoped
-- how typed push routing coexists with legacy destination builders during `v1.x`
+
+- which integration example best communicates the builder-first contract without overfitting to one architecture
+- what preview-safe or debug-only diagnostics are helpful without becoming noisy
+- which multi-context scenarios should be treated as supported and locked down by tests
 
 Why this version:
-Typed push routing is the first new public routing family and should be isolated in its own minor release.
+The roadmap needs to match the real way the package is used before deep-link or restoration work is designed on top of it.
 
-### v1.5.1
+### v1.4.4
 
-- Typed push hardening patch.
-- Add parity tests, documentation, and low-risk bug fixes.
+- Builder-first hardening patch.
+- Add low-risk regression fixes, documentation polish, and example refinements only.
 - Do not introduce another routing family in this release.
 
 Why this version:
-Typed push routing needs one stabilization pass before the package grows into typed modal flows.
+The clarified integration model should get one stabilization pass before new capability work begins.
 
-### v1.6.0
+### v1.5.0
 
-- Typed modal routing release.
-- Extend typed routing to sheet, full-screen, and overlay presentation state.
-- Keep modal routing additive alongside legacy presentation APIs.
-
-Needs deeper design before implementation:
-- whether sheet, full-screen, and overlay routes share one presentation enum or remain separated
-- how typed modal state coordinates with an already-active push stack
-- whether overlay routing should stay lightweight or join the typed modal model fully
-
-Why this version:
-Typed modal routing is a distinct capability with different lifecycle rules and deserves its own release.
-
-### v1.6.1
-
-- Typed modal hardening patch.
-- Fix edge cases, expand regression coverage, and tighten documentation.
-
-Why this version:
-This protects the package from stacking another large feature on top of fresh modal-route behavior.
-
-### v1.7.0
-
-- Deep-link push release.
-- Add entry points to build push stacks from typed routes or URL payloads.
-- Document resolver behavior and supported failure cases.
+- Deep-link input modeling release.
+- Add additive APIs that allow applications to drive navigation from serializable payloads or intent values while keeping screen assembly app-owned.
+- Define how push and modal entry points hand off payload resolution to app-owned builders or resolvers.
+- Keep the current closure-based APIs first-class and fully supported.
 
 Needs deeper design before implementation:
-- how URLs or external payloads map to typed routes
-- what the resolver returns on partial or invalid input
-- whether deep-link reconstruction is all-or-nothing or can degrade to partial stacks
+
+- the payload shape and how it scopes to app features or router contexts
+- how application builders or resolvers are provided to the package at the point of reconstruction
+- what happens on partial, invalid, or unsupported input
 
 Why this version:
-Deep-link push flows should build on typed push routing rather than inventing a parallel model.
+Deep-link entry points are valuable, but only if they respect the existing builder-first ownership model.
 
-### v1.7.1
+### v1.5.1
 
-- Deep-link push hardening patch.
+- Deep-link hardening patch.
 - Add resolver fixes, regression tests, and documentation updates only.
 
 Why this version:
-Deep-link resolution is behavior-heavy and benefits from a dedicated stabilization patch before modal deep-link coordination begins.
+Input-driven navigation is behavior-heavy and benefits from a dedicated stabilization pass before restoration work is added.
 
-### v1.8.0
+### v1.6.0
 
-- Modal deep-link coordination release.
-- Support reconstructing modal-first and mixed push-plus-modal flows from typed input.
-- Document the supported flow shapes explicitly.
+- Restoration release.
+- Persist and rebuild supported navigation state using app-owned builders or resolvers.
+- Add round-trip restoration tests for supported flows.
+- Keep restoration scoped to navigation state, not arbitrary view reconstruction.
+
+Needs deeper design before implementation:
+
+- what restoration payload format becomes the long-term compatibility boundary
+- how versioning and backward compatibility are handled for saved navigation state
+- how restoration behaves across multiple `RouterView` contexts such as tab roots
 
 Why this version:
-Modal deep-link coordination should follow typed modal routing and typed push deep-linking, not ship ahead of either.
+Restoration is only worth shipping once deep-link input and builder handoff rules are stable enough to serialize and rebuild safely.
 
-### v1.8.1
+### v1.6.1
 
-- Modal deep-link hardening patch.
+- Restoration hardening patch.
+- Fix edge cases, expand regression coverage, and tighten documentation.
+
+Why this version:
+State restoration should get one stabilization pass before more optional abstraction work is considered.
+
+### v1.7.0
+
+- Optional navigation-intent helper release.
+- Evaluate additive helper APIs for app-owned routers or adapters if real-world integrations show enough repeated boilerplate.
+- Keep any such helpers optional, app-scoped, and compatible with builder-owned assembly.
+- Do not require package-owned typed routing or global registries in the core.
+
+Needs deeper design before implementation:
+
+- whether the helpers belong in the public package at all or should remain example-level patterns
+- how helper inputs stay serializable and architecture-neutral
+- how to avoid locking the package into one app architecture's naming or layering conventions
+
+Why this version:
+Any data-driven navigation convenience should be proven by real integration pain before it becomes part of the public API.
+
+### v1.7.1
+
+- Navigation-intent helper hardening patch.
 - Ship compatibility fixes, regression coverage, and documentation updates only.
 
 Why this version:
-This keeps flow-reconstruction hardening separate from restoration work.
-
-### v1.9.0
-
-- Restoration release.
-- Persist and rebuild typed stack and typed presentation state after relaunch.
-- Add round-trip restoration tests for supported flows.
-
-Needs deeper design before implementation:
-- what restoration payload format becomes the long-term compatibility boundary
-- how versioning and backward compatibility are handled for saved navigation state
-- whether restoration includes only routes and presentation state or also selected transient UI state
-
-Why this version:
-Restoration is only worth shipping once the route model and deep-link reconstruction paths are already stable.
+If helpers become public, they still need their own stabilization release before cleanup work begins.
 
 ### v2.0.0
 
 - Cleanup release.
-- Remove or de-emphasize legacy `AnyDestination`-first surfaces only if `v1.x` additive APIs fully cover migration.
+- Remove or de-emphasize legacy `AnyDestination`-first surfaces only if additive replacements fully cover builder-first migration.
 - Revisit naming such as `showScreen` and `SegueOption` only when the replacement API surface is complete and documented.
 - Ship formal migration guidance with any breaking cleanup.
 
 Needs deeper design before implementation:
+
 - what the migration path looks like for current package consumers
 - which naming changes are worth the source break and which should stay as compatibility shims
 - whether legacy APIs are removed entirely or kept as deprecated bridges for one more cycle
@@ -334,38 +312,42 @@ Needs deeper design before implementation:
 Why this version:
 Breaking changes should happen only after the package has already proven an additive migration path through `v1.x`.
 
-## Public API and Type Direction
+## Public API and Integration Direction
 
 - `v1.4.0` is the first release allowed to add new public navigation-control APIs.
-- The current branch already uses explicit push-stack control as the baseline for future work.
-- Typed routing must arrive in two steps:
-  - Push routes first in `v1.5.0`.
-  - Modal and presentation routes second in `v1.6.0`.
+- The current closure-based builder API remains first-class throughout `v1.x`.
+- Builders own screen assembly; `ACRouting` owns navigation state and transition behavior.
+- Future data-driven APIs, if added, must hand off rendering to app-owned builders or resolvers and must carry only serializable navigation intent.
+- The package must not require a package-owned global route-to-view registry in the core.
+- Multiple independent `RouterView` contexts remain supported and should stay documented as such.
 - No roadmap item before `v2.0.0` may require removing current APIs.
-- Future public APIs should favor fluent Swift call sites, role-based parameter labels, concise documentation comments, and additive migration paths.
-- Future presentation state should move toward enum-driven or item-driven SwiftUI modeling rather than parallel presentation slots.
-- Internal examples and previews should continue to demonstrate only flows that are truly supported by the current implementation.
+- Future presentation state can become more data-driven internally, but public integration should remain builder-friendly.
 
 ## Test Strategy
 
 - Each feature-bearing release should ship with its own behavior tests.
-- Do not defer test coverage for a new routing family to a later milestone.
-- Keep parity tests between legacy builder APIs and new typed APIs once typed routing begins.
+- Do not defer test coverage for a new integration surface to a later milestone.
+- Prefer parity between documented integration patterns and core behavior over parity with hypothetical future abstractions.
 
 Minimum scenarios to cover explicitly:
 
-- `push -> push -> pop`
-- `push -> sheet -> push -> dismiss`
-- `push -> fullScreenCover -> dismiss`
-- Overlay tap dismissal
-- Alert and confirmation dialog lifecycle
-- macOS full-screen fallback behavior
-- Parity between legacy builder APIs and new typed APIs
-- Deep-link reconstruction round-trips once deep links exist
-- Restoration round-trips once restoration exists
+- A root builder hosting multiple independent `RouterView` contexts, such as tab roots.
+- An app-owned router adapter pushing a builder-created screen.
+- Sheet and full-screen flows assembled by app-owned builders.
+- Overlay presentation assembled by app-owned builders.
+- A pushed child dismissing the first ancestor routed modal through `dismissAncestorModal()`.
+- `pop()`, `pop(count:)`, and `popToRoot()` through builder-assembled flows.
+- Alert and confirmation dialog lifecycle.
+- Missing-router diagnostics in previews or isolated tests.
+- macOS full-screen fallback behavior.
+- Deep-link reconstruction round-trips once deep-link input exists.
+- Restoration round-trips once restoration exists.
 
 ## Non-Goals for Now
 
+- Moving screen assembly into `ACRouting`.
+- Requiring a package-owned global route-to-view registry in the core.
+- Forcing apps to adopt typed routing inside the package to use push, sheet, full-screen, or overlay APIs.
 - Raising the deployment floor only to adopt Observation in the routing core.
 - Liquid Glass work that is unrelated to routing behavior.
 - UIKit bridging unless a concrete integration need appears.

@@ -7,16 +7,20 @@
 
 import SwiftUI
 
-/// A Hashable wrapper used as an element of NavigationStack's `path`.
+/// A hashable wrapper that stores one routed destination inside a navigation path.
 ///
-/// NavigationStack requires Hashable elements, but SwiftUI `View` is not Hashable.
-/// So we store:
-/// - a stable Hashable identity (UUID string)
-/// - the actual destination view, type-erased as AnyView
+/// `NavigationStack` requires hashable path elements, while SwiftUI views are not hashable.
+/// `AnyDestination` keeps a unique identity alongside a type-erased destination view so routed
+/// push stacks can hold heterogeneous screens.
+///
+/// Most package consumers do not create this type directly. It remains public because the
+/// routing runtime uses it in public generic signatures and tests.
 public struct AnyDestination: Hashable {
     // MARK: - Initializer
     
-    /// Wraps a SwiftUI destination view in a type-erased, hashable container.
+    /// Creates a hashable routed destination from a SwiftUI view.
+    ///
+    /// - Parameter destination: The destination view to type-erase and store in the routed navigation path.
     @MainActor
     public init<T: View>(destination: T) {
         self.view = destination.any()
@@ -32,11 +36,14 @@ public struct AnyDestination: Hashable {
     
     // MARK: - Methods
 
-    /// Hash and equality are based only on `id`, not on the wrapped view value.
+    /// Hashes the destination using only its unique identity.
+    ///
+    /// - Parameter hasher: The hasher to update with this destination's identity.
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
 
+    /// Returns a Boolean value indicating whether two routed destinations share the same identity.
     public static func == (lhs: AnyDestination, rhs: AnyDestination) -> Bool {
         lhs.id == rhs.id
     }

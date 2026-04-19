@@ -100,6 +100,40 @@ struct RouterViewIntegrationTests {
         #expect(Array(stackBox.stack.prefix(2)) == [first, second])
     }
 
+    @Test("Independent child routers mutate only their own inherited stacks")
+    func independentChildRoutersMutateOnlyTheirOwnStacks() {
+        let firstStackBox = StackBox()
+        let secondStackBox = StackBox()
+
+        let firstRouter: any Router = makeChildRouter(stackBox: firstStackBox)
+        let secondRouter: any Router = makeChildRouter(stackBox: secondStackBox)
+
+        firstRouter.showScreen(.push) { _ in Text("First context") }
+        secondRouter.showScreen(.push) { _ in Text("Second context") }
+
+        #expect(firstStackBox.stack.count == 1)
+        #expect(secondStackBox.stack.count == 1)
+        #expect(firstStackBox.stack[0] != secondStackBox.stack[0])
+    }
+
+    @Test("Clearing one inherited child stack does not affect another router context")
+    func clearingOneInheritedStackDoesNotAffectAnotherContext() {
+        let firstStackBox = StackBox([AnyDestination(destination: Text("First context"))])
+        let secondStackBox = StackBox([AnyDestination(destination: Text("Second context"))])
+
+        let firstRouter: any Router = makeChildRouter(stackBox: firstStackBox)
+        let secondRouter: any Router = makeChildRouter(stackBox: secondStackBox)
+
+        firstRouter.popToRoot()
+
+        #expect(firstStackBox.stack.isEmpty)
+        #expect(secondStackBox.stack.count == 1)
+
+        secondRouter.dismissScreen()
+
+        #expect(secondStackBox.stack.isEmpty)
+    }
+
     @Test("showScreen(.sheet) is callable")
     func showScreenSheet() {
         let router: any Router = RouterView { _ in Text("Root") }
