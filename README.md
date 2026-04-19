@@ -11,6 +11,9 @@
 `ACRouting` is a SwiftUI-first routing package built to keep navigation concerns
 out of feature views and centralize transitions behind a single `Router` API.
 
+Hosted documentation is prepared for GitHub Pages at `https://acrouting.acasto.dev`.
+The repository setup steps are documented in [HostedDocumentation.md](/Users/antoniocasto/Development/Mobile/iOS/Portfolio/ACRouting/docs/HostedDocumentation.md).
+
 ## Why ACRouting
 
 - Single routing abstraction for push, sheet, full screen, alert, and custom modal.

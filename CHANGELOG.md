@@ -14,12 +14,14 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 - A builder-first README example that shows app-owned screen assembly through a router adapter layered on top of `ACRouting`.
 - A preview-catalog demo that illustrates builder-owned screen assembly without turning `ACRouting` into a screen factory.
 - A DocC catalog for the package with module overview, builder-first integration guidance, and presentation-semantics documentation.
+- A GitHub Pages workflow that builds and deploys the DocC catalog from `main`.
 - Regression tests for builder-assembled push, sheet, full-screen, and overlay flows plus independent router-context stack isolation.
 
 ### Changed
 
 - `MockRouter` now emits actionable debug diagnostics explaining how to inject a real router when `@Environment(\.router)` is read outside `RouterView`.
 - README guidance and the internal preview catalog now treat builder-owned screen assembly as the default integration model for larger apps.
+- The repository now documents the one-time GitHub Pages and DNS setup needed to publish the DocC site at `https://acrouting.acasto.dev`.
 
 ## [1.4.2] - 2026-04-15
 
