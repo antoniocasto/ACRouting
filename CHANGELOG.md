@@ -7,11 +7,6 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-### Changed
-
-- The hosted DocC homepage now surfaces the current package version and the README credits directly in the published documentation.
-- The README now links more explicitly to the public documentation site at `https://acrouting.acasto.dev`.
-
 ## [1.4.3] - 2026-04-19
 
 ### Added
@@ -27,6 +22,8 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 - `MockRouter` now emits actionable debug diagnostics explaining how to inject a real router when `@Environment(\.router)` is read outside `RouterView`.
 - README guidance and the internal preview catalog now treat builder-owned screen assembly as the default integration model for larger apps.
 - The repository now documents the one-time GitHub Pages and DNS setup needed to publish the DocC site at `https://acrouting.acasto.dev`.
+- The hosted DocC homepage now surfaces the current package version and the README credits directly in the published documentation.
+- The README now links more explicitly to the public documentation site at `https://acrouting.acasto.dev`.
 
 ## [1.4.2] - 2026-04-15
 
