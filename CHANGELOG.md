@@ -15,6 +15,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Stabilized the GitHub Actions CI destination so the workflow no longer depends on a specific simulator device being installed on the runner.
 - Corrected the README docs-hosting link to use a repository-relative path instead of a local machine path.
 - Aligned the roadmap's current assessment with the already-released `1.4.3` builder-first documentation, diagnostics, and tests.
 
