@@ -7,6 +7,17 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.4.4] - 2026-04-21
+
+### Added
+
+- A regression test that verifies app-owned router adapters use the destination router context for follow-up navigation after a builder-assembled push.
+
+### Fixed
+
+- Corrected the README docs-hosting link to use a repository-relative path instead of a local machine path.
+- Aligned the roadmap's current assessment with the already-released `1.4.3` builder-first documentation, diagnostics, and tests.
+
 ## [1.4.3] - 2026-04-19
 
 ### Added
