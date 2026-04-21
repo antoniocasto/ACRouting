@@ -42,21 +42,25 @@ This roadmap is intended to be the default planning source for future Codex chat
 - Pushed child flows can dismiss their first ancestor routed sheet or full-screen cover explicitly through `dismissAncestorModal()`.
 - The package already supports multiple independent `RouterView` contexts, which matches tab-based and feature-scoped app architectures well.
 - A debug-only preview catalog exists for local Xcode exploration of real package flows and current limits.
+- README and DocC now document builder-owned screen assembly as the recommended integration model for larger apps.
+- Public examples now show app-owned router adapters layered on top of `ACRouting` instead of moving screen construction into the package core.
+- Missing-router fallback behavior now emits debug guidance that explains how to wrap a flow in `RouterView` or pass a real router explicitly.
+- Regression coverage now includes builder-assembled push, sheet, full-screen, overlay, and independent router-context stack isolation.
 
-### Current supported behavior in `v1.4.2`
+### Current supported behavior in `v1.4.4`
 
 - Root flow with push navigation.
 - One routed `.sheet` flow with its own local push stack.
 - One routed `.fullScreenCover` flow with its own local push stack.
 - A lightweight `showModal` overlay inside the current router context, including root, pushed, sheet-root, or full-screen-root screens.
 - A pushed child inside one routed `.sheet` or `.fullScreenCover` flow calling `dismissAncestorModal()` to close that first ancestor routed modal.
+- Builder-first integration through app-owned builders, factories, or router adapters while `ACRouting` owns only navigation state and presentation behavior.
+- Multiple independent `RouterView` contexts for tab roots or feature-scoped flows.
 
-### Current gaps to address first
+### Current gaps to address after `v1.4.4`
 
-- The roadmap and docs still over-index on typed routing inside the package core instead of documenting the builder-first integration model consumers actually use.
-- Public examples do not yet show app-owned router adapters or builder-orchestrated screen assembly as first-class patterns.
-- Missing-router behavior is safe, but diagnostics are still lightweight and could do more than the current `MockRouter` fallback.
-- The test suite is much stronger than before, but it still under-documents builder-assembled flows and multi-context integration patterns.
+- Builder-first regression coverage is much stronger than before, but follow-up tests should continue locking down any small adapter or multi-context edge cases discovered during use.
+- Missing-router diagnostics are actionable, but they should stay preview-safe and avoid becoming noisy.
 - `AnyView` and `AnyDestination` still limit future state serialization and reconstruction work, but any cleanup in this area must preserve builder-owned assembly.
 - Deep-link and restoration boundaries are not yet defined around app-owned builders or resolvers.
 
@@ -206,11 +210,13 @@ This kept modal semantics cleanup separate from later roadmap work and gave the 
 - Improve missing-router diagnostics and preview-safe guidance without changing the architecture.
 - Do not add package-owned typed routing or core route registration in this release.
 
-Needs deeper design before implementation:
+Already implemented:
 
-- which integration example best communicates the builder-first contract without overfitting to one architecture
-- what preview-safe or debug-only diagnostics are helpful without becoming noisy
-- which multi-context scenarios should be treated as supported and locked down by tests
+- README and DocC document builder-first integration as the default model for larger apps.
+- Public examples show an app-owned router adapter delegating screen construction to builders.
+- The preview catalog demonstrates the supported `v1.4.3` behavior surface and current layering limits.
+- `MockRouter` emits debug diagnostics for missing router injection.
+- Regression tests cover builder-assembled push, sheet, full-screen, overlay, and independent router-context stack isolation.
 
 Why this version:
 The roadmap needs to match the real way the package is used before deep-link or restoration work is designed on top of it.
@@ -220,6 +226,13 @@ The roadmap needs to match the real way the package is used before deep-link or 
 - Builder-first hardening patch.
 - Add low-risk regression fixes, documentation polish, and example refinements only.
 - Do not introduce another routing family in this release.
+
+Already implemented:
+
+- README and DocC version markers were updated for the `1.4.4` release.
+- README links and modal-layering copy were corrected to avoid stale local paths or version references.
+- The roadmap current assessment now reflects the already-released `1.4.3` builder-first documentation, diagnostics, and tests.
+- Regression coverage now verifies that an app-owned router adapter forwards follow-up navigation through the routed destination context after a builder-assembled push.
 
 Why this version:
 The clarified integration model should get one stabilization pass before new capability work begins.

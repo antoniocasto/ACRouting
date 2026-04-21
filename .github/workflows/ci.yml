@@ -12,6 +12,7 @@ concurrency:
 
 jobs:
   test:
+    # Keep this name stable because main branch protection requires it.
     name: Test (Xcode ${{ matrix.xcode }}, iOS ${{ matrix.ios }})
     runs-on: macos-15
     strategy:
@@ -20,7 +21,6 @@ jobs:
         include:
           - xcode: "26.2"
             ios: "26.2"
-            simulator: "iPhone 16 Pro"
 
     steps:
       - name: Checkout
@@ -46,15 +46,15 @@ jobs:
         run: |
           xcodebuild build-for-testing \
             -scheme ACRouting \
-            -destination "platform=iOS Simulator,name=${{ matrix.simulator }},OS=${{ matrix.ios }}" \
+            -destination "generic/platform=iOS Simulator" \
             -clonedSourcePackagesDirPath .build \
             | xcpretty --color && exit ${PIPESTATUS[0]}
 
       - name: Test
         run: |
-          xcodebuild test-without-building \
+          xcodebuild test \
             -scheme ACRouting \
-            -destination "platform=iOS Simulator,name=${{ matrix.simulator }},OS=${{ matrix.ios }}" \
+            -destination "platform=macOS" \
             -clonedSourcePackagesDirPath .build \
             -resultBundlePath TestResults.xcresult \
             | xcpretty --color && exit ${PIPESTATUS[0]}

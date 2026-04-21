@@ -145,18 +145,22 @@ private protocol BuilderDrivenFeatureRouting {
 @MainActor
 private final class BuilderDrivenFeatureBuilder {
     private(set) var builtScreens: [String] = []
+    private(set) var receivedRouters: [any BuilderDrivenFeatureRouting] = []
 
     func makeDetail(id: Int, router: any BuilderDrivenFeatureRouting) -> some View {
+        receivedRouters.append(router)
         builtScreens.append("detail:\(id)")
         return Text("Detail \(id)")
     }
 
     func makeSheet(router: any BuilderDrivenFeatureRouting) -> some View {
+        receivedRouters.append(router)
         builtScreens.append("sheet")
         return Text("Sheet")
     }
 
     func makeFullScreen(router: any BuilderDrivenFeatureRouting) -> some View {
+        receivedRouters.append(router)
         builtScreens.append("fullScreen")
         return Text("Full screen")
     }
@@ -500,6 +504,26 @@ struct BuilderFirstRouterAdapterTests {
         let _: AnyView = router.overlayBuilders[0]()
 
         #expect(builder.builtScreens == ["overlay"])
+    }
+
+    @Test("Destination adapter forwards follow-up navigation through the routed context")
+    func destinationAdapterUsesRoutedContextRouter() throws {
+        let rootRouter = DestinationCapturingRouter()
+        let destinationRouter = DestinationCapturingRouter()
+        let builder = BuilderDrivenFeatureBuilder()
+        let featureRouter = BuilderDrivenFeatureRouterAdapter(router: rootRouter, builder: builder)
+
+        featureRouter.showPushedDetail(id: 7)
+
+        let pushedDestination = try #require(rootRouter.screenCalls.first)
+        let _: AnyView = pushedDestination.destination(destinationRouter)
+        let pushedFeatureRouter = try #require(builder.receivedRouters.last)
+
+        pushedFeatureRouter.showSheet()
+
+        #expect(rootRouter.screenCalls.count == 1)
+        #expect(destinationRouter.screenCalls.count == 1)
+        #expect(destinationRouter.screenCalls[0].option == .sheet)
     }
 }
 
