@@ -12,15 +12,13 @@ concurrency:
 
 jobs:
   test:
-    name: Test (Xcode ${{ matrix.xcode }}, iOS ${{ matrix.ios }})
+    name: Test (Xcode ${{ matrix.xcode }})
     runs-on: macos-15
     strategy:
       fail-fast: false
       matrix:
         include:
           - xcode: "26.2"
-            ios: "26.2"
-            simulator: "iPhone 16 Pro"
 
     steps:
       - name: Checkout
@@ -46,15 +44,15 @@ jobs:
         run: |
           xcodebuild build-for-testing \
             -scheme ACRouting \
-            -destination "platform=iOS Simulator,name=${{ matrix.simulator }},OS=${{ matrix.ios }}" \
+            -destination "generic/platform=iOS Simulator" \
             -clonedSourcePackagesDirPath .build \
             | xcpretty --color && exit ${PIPESTATUS[0]}
 
       - name: Test
         run: |
-          xcodebuild test-without-building \
+          xcodebuild test \
             -scheme ACRouting \
-            -destination "platform=iOS Simulator,name=${{ matrix.simulator }},OS=${{ matrix.ios }}" \
+            -destination "platform=macOS" \
             -clonedSourcePackagesDirPath .build \
             -resultBundlePath TestResults.xcresult \
             | xcpretty --color && exit ${PIPESTATUS[0]}
@@ -63,6 +61,6 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: TestResults-Xcode${{ matrix.xcode }}-iOS${{ matrix.ios }}
+          name: TestResults-Xcode${{ matrix.xcode }}
           path: TestResults.xcresult
           retention-days: 7
