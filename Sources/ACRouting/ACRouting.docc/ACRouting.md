@@ -65,6 +65,7 @@ For behavior details and supported limits, see <doc:PresentationSemantics>.
 ### Navigation Commands
 
 - ``Router/showScreen(_:destination:)``
+- ``Router/showScreen(_:using:)``
 - ``Router/dismissScreen()``
 - ``Router/dismissAncestorModal()``
 - ``Router/pop()``
