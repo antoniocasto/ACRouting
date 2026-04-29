@@ -84,20 +84,22 @@ func destination(for payload: AppRoute, router: any Router) -> some View {
 }
 ```
 
-In a VIPER/RIB app, deep links and push notifications should enter through AppDelegate, a module wrapper, or a Root/Core RIB boundary. The resolver can then delegate module assembly to builders while passing the routed context to the feature router:
+In a VIPER/RIB app, deep links and push notifications should enter through AppDelegate, a module wrapper, or a Root/Core RIB boundary. The resolver can create an app-owned feature router or adapter at that boundary, then delegate module assembly to builders:
 
 ```swift
 func destination(for payload: AppRoute, router: any Router) -> some View {
     switch payload {
     case .detail(let id):
-        detailBuilder.makeDetail(id: id, acRouter: router)
+        let featureRouter = DetailFeatureRouter(acRouter: router, builder: detailBuilder)
+        detailBuilder.makeDetail(id: id, router: featureRouter)
     case .settings:
-        settingsBuilder.makeSettings(acRouter: router)
+        let featureRouter = SettingsFeatureRouter(acRouter: router, builder: settingsBuilder)
+        settingsBuilder.makeSettings(router: featureRouter)
     }
 }
 ```
 
-This keeps `View` and `Presenter` types out of the deep-link entry point. Builders still assemble VIPER modules, and feature routers still own feature-specific navigation.
+This keeps `View` and `Presenter` types out of the deep-link entry point. Builders still assemble VIPER modules, feature routers still own feature-specific navigation, and presenters or interactors do not need to import `ACRouting`.
 
 ## Boundaries
 
@@ -105,5 +107,5 @@ This keeps `View` and `Presenter` types out of the deep-link entry point. Builde
 - Presentation style selection belongs to the app-owned resolver.
 - `ACRouting` does not decode URLs directly.
 - `ACRouting` does not own a global route registry.
-- `ACRouting` does not persist or restore navigation state in `v1.5.0`.
+- `ACRouting` does not persist or restore navigation state in `v1.5.1`.
 - Multi-step restoration remains future work after the deep-link payload boundary is stable.
