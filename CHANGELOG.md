@@ -7,6 +7,13 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-04-29
+
+### Fixed
+
+- Clarified VIPER/RIB deep-link examples so app-owned router adapters sit at the resolver boundary instead of exposing `ACRouting` through feature presenters or interactors.
+- Refined roadmap test guidance to separate current deep-link intent coverage from future stack reconstruction coverage.
+
 ## [1.5.0] - 2026-04-29
 
 ### Added

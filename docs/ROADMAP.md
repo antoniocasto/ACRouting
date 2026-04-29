@@ -363,7 +363,8 @@ Minimum scenarios to cover explicitly:
 - Alert and confirmation dialog lifecycle.
 - Missing-router diagnostics in previews or isolated tests.
 - macOS full-screen fallback behavior.
-- Deep-link reconstruction round-trips once deep-link input exists.
+- `RoutedNavigationIntent` Codable round-trips and resolver-selected presentation behavior for deep-link input.
+- Deep-link stack reconstruction round-trips once reconstruction APIs exist.
 - Restoration round-trips once restoration exists.
 
 ## Non-Goals for Now
