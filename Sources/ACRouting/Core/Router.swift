@@ -156,9 +156,10 @@ public extension Router {
 public extension Router {
     /// Presents a serializable routed navigation intent through an app-owned resolver.
     ///
-    /// The resolver validates the payload before presentation. Supported payloads delegate to
-    /// `showScreen(_:destination:)`, keeping the existing closure-based routing API as the runtime
-    /// primitive. Unsupported payloads return `.unsupported` and do not change router state.
+    /// The resolver validates the payload before presentation, chooses the routed presentation
+    /// style, and builds the destination. Supported payloads delegate to `showScreen(_:destination:)`,
+    /// keeping the existing closure-based routing API as the runtime primitive. Unsupported
+    /// payloads return `.unsupported` and do not change router state.
     ///
     /// - Parameters:
     ///   - intent: The serializable navigation intent to present.
@@ -173,7 +174,7 @@ public extension Router {
             return .unsupported(intent)
         }
 
-        showScreen(intent.presentation) { router in
+        showScreen(resolver.presentation(for: intent.payload)) { router in
             resolver.destination(for: intent.payload, router: router)
         }
 

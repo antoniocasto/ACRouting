@@ -2,22 +2,16 @@ import Foundation
 
 /// A serializable routed navigation request.
 ///
-/// The payload is app-owned navigation intent. `ACRouting` stores only the presentation style
-/// and payload value; apps remain responsible for resolving the payload into a concrete view.
+/// The payload is app-owned navigation intent. `ACRouting` stores only this payload value;
+/// apps remain responsible for resolving it into a presentation style and concrete view.
 public struct RoutedNavigationIntent<Payload>: Codable, Hashable, Sendable where Payload: Codable & Hashable & Sendable {
-    /// The routed presentation style to use when the payload is resolved.
-    public let presentation: SegueOption
-
     /// The app-owned serializable navigation payload.
     public let payload: Payload
 
     /// Creates a routed navigation intent.
     ///
-    /// - Parameters:
-    ///   - presentation: The routed presentation style to use.
-    ///   - payload: The app-owned serializable payload.
-    public init(presentation: SegueOption, payload: Payload) {
-        self.presentation = presentation
+    /// - Parameter payload: The app-owned serializable payload.
+    public init(payload: Payload) {
         self.payload = payload
     }
 }

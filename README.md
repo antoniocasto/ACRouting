@@ -287,6 +287,10 @@ struct AppRouteResolver: RoutedNavigationIntentResolving {
         true
     }
 
+    func presentation(for payload: AppRoute) -> SegueOption {
+        .push
+    }
+
     func destination(for payload: AppRoute, router: any Router) -> some View {
         switch payload {
         case .detail(let id):
@@ -295,11 +299,11 @@ struct AppRouteResolver: RoutedNavigationIntentResolving {
     }
 }
 
-let intent = RoutedNavigationIntent(presentation: .push, payload: AppRoute.detail(id: 42))
+let intent = RoutedNavigationIntent(payload: AppRoute.detail(id: 42))
 let result = router.showScreen(intent, using: AppRouteResolver(builder: builder))
 ```
 
-Unsupported payloads return `.unsupported(intent)` and do not present a screen. URL parsing, payload decoding, and feature-module construction remain app-owned responsibilities.
+Unsupported payloads return `.unsupported(intent)` and do not present a screen. Presentation style selection, URL parsing, payload decoding, and feature-module construction remain app-owned responsibilities.
 
 ## Supported Modal Layering in `1.4.4`
 

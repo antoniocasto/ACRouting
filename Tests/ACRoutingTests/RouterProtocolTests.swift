@@ -261,6 +261,15 @@ private struct DeepLinkTestResolver: RoutedNavigationIntentResolving {
         supportedRoutes.contains(payload)
     }
 
+    func presentation(for payload: DeepLinkTestRoute) -> SegueOption {
+        switch payload {
+        case .detail:
+            .fullScreenCover
+        case .unsupported:
+            .sheet
+        }
+    }
+
     func destination(for payload: DeepLinkTestRoute, router: any Router) -> some View {
         Text("Resolved \(payload.rawValue)")
     }
@@ -543,17 +552,17 @@ struct BuilderFirstRouterAdapterTests {
         #expect(destinationRouter.screenCalls[0].option == .sheet)
     }
 
-    @Test("Supported routed intent delegates to showScreen")
-    func supportedRoutedIntentDelegatesToShowScreen() throws {
+    @Test("Supported routed intent uses resolver presentation")
+    func supportedRoutedIntentUsesResolverPresentation() throws {
         let router = DestinationCapturingRouter()
         let resolver = DeepLinkTestResolver()
-        let intent = RoutedNavigationIntent(presentation: .push, payload: DeepLinkTestRoute.detail)
+        let intent = RoutedNavigationIntent(payload: DeepLinkTestRoute.detail)
 
         let result = router.showScreen(intent, using: resolver)
 
         #expect(result == .presented(intent))
         #expect(router.screenCalls.count == 1)
-        #expect(router.screenCalls[0].option == .push)
+        #expect(router.screenCalls[0].option == .fullScreenCover)
 
         let _: AnyView = router.screenCalls[0].destination(MockRouter())
     }
@@ -562,7 +571,7 @@ struct BuilderFirstRouterAdapterTests {
     func unsupportedRoutedIntentDoesNotPresent() {
         let router = DestinationCapturingRouter()
         let resolver = DeepLinkTestResolver()
-        let intent = RoutedNavigationIntent(presentation: .sheet, payload: DeepLinkTestRoute.unsupported)
+        let intent = RoutedNavigationIntent(payload: DeepLinkTestRoute.unsupported)
 
         let result = router.showScreen(intent, using: resolver)
 

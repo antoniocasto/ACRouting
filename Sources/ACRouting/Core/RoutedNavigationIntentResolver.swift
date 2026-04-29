@@ -18,6 +18,12 @@ public protocol RoutedNavigationIntentResolving {
     /// Unsupported payloads are not presented by `Router.showScreen(_:using:)`.
     func canResolve(_ payload: Payload) -> Bool
 
+    /// Returns the routed presentation style to use for a supported payload.
+    ///
+    /// This keeps the decision about push, sheet, or full-screen presentation in the
+    /// app-owned resolver instead of serializing it into the navigation payload.
+    func presentation(for payload: Payload) -> SegueOption
+
     /// Builds the destination for a supported payload.
     ///
     /// - Parameters:

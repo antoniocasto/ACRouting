@@ -241,14 +241,14 @@ The clarified integration model should get one stabilization pass before new cap
 
 - Deep-link input modeling release.
 - Add additive APIs that allow applications to drive navigation from serializable payloads or intent values while keeping screen assembly app-owned.
-- Define how push and modal entry points hand off payload resolution to app-owned builders or resolvers.
+- Define how payload resolution and presentation style selection are handed off to app-owned builders or resolvers.
 - Keep the current closure-based APIs first-class and fully supported.
 
 Already implemented:
 
-- `RoutedNavigationIntent` stores a serializable payload plus the routed presentation style.
-- `RoutedNavigationIntentResolving` keeps screen assembly in app-owned builders or resolvers.
-- `Router.showScreen(_:using:)` validates support before forwarding supported payloads to the existing closure-based presentation API.
+- `RoutedNavigationIntent` stores only the app-owned serializable payload.
+- `RoutedNavigationIntentResolving` keeps presentation style selection and screen assembly in app-owned builders or resolvers.
+- `Router.showScreen(_:using:)` validates support before forwarding supported payloads and resolver-selected presentation styles to the existing closure-based presentation API.
 - Unsupported payloads return `.unsupported` without mutating router state.
 
 Deferred to later milestones:

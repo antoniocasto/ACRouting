@@ -12,6 +12,10 @@ private struct RouterViewDeepLinkResolver: RoutedNavigationIntentResolving {
         payload == .detail
     }
 
+    func presentation(for payload: RouterViewDeepLinkRoute) -> SegueOption {
+        .push
+    }
+
     func destination(for payload: RouterViewDeepLinkRoute, router: any Router) -> some View {
         Text("RouterView \(payload.rawValue)")
     }
@@ -121,7 +125,7 @@ struct RouterViewIntegrationTests {
         let second = AnyDestination(destination: Text("Second"))
         let stackBox = StackBox([first, second])
         let router: any Router = makeChildRouter(stackBox: stackBox)
-        let intent = RoutedNavigationIntent(presentation: .push, payload: RouterViewDeepLinkRoute.detail)
+        let intent = RoutedNavigationIntent(payload: RouterViewDeepLinkRoute.detail)
 
         let result = router.showScreen(intent, using: RouterViewDeepLinkResolver())
 
@@ -135,7 +139,7 @@ struct RouterViewIntegrationTests {
         let sentinel = AnyDestination(destination: Text("Sentinel"))
         let stackBox = StackBox([sentinel])
         let router: any Router = makeChildRouter(stackBox: stackBox)
-        let intent = RoutedNavigationIntent(presentation: .push, payload: RouterViewDeepLinkRoute.unsupported)
+        let intent = RoutedNavigationIntent(payload: RouterViewDeepLinkRoute.unsupported)
 
         let result = router.showScreen(intent, using: RouterViewDeepLinkResolver())
 

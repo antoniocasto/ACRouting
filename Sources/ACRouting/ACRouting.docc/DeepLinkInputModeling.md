@@ -4,7 +4,7 @@ Model deep-link requests as serializable app-owned payloads, then resolve those 
 
 ## Overview
 
-`ACRouting` keeps screen assembly outside the package. A routed intent stores only a presentation style and payload:
+`ACRouting` keeps screen assembly outside the package. A routed intent stores only the app-owned payload:
 
 ```swift
 enum AppRoute: Codable, Hashable, Sendable {
@@ -12,10 +12,10 @@ enum AppRoute: Codable, Hashable, Sendable {
     case settings
 }
 
-let intent = RoutedNavigationIntent(presentation: .push, payload: AppRoute.detail(id: 42))
+let intent = RoutedNavigationIntent(payload: AppRoute.detail(id: 42))
 ```
 
-Your app provides a resolver that decides whether the payload is supported and builds the destination for the routed context:
+Your app provides a resolver that decides whether the payload is supported, how it should be presented, and what destination to build for the routed context:
 
 ```swift
 struct AppRouteResolver: RoutedNavigationIntentResolving {
@@ -25,6 +25,15 @@ struct AppRouteResolver: RoutedNavigationIntentResolving {
         switch payload {
         case .detail, .settings:
             true
+        }
+    }
+
+    func presentation(for payload: AppRoute) -> SegueOption {
+        switch payload {
+        case .detail:
+            .push
+        case .settings:
+            .sheet
         }
     }
 
@@ -50,6 +59,7 @@ If the resolver rejects the payload, the router returns `.unsupported(intent)` a
 ## Boundaries
 
 - `RoutedNavigationIntent` payloads must conform to `Codable`, `Hashable`, and `Sendable`.
+- Presentation style selection belongs to the app-owned resolver.
 - `ACRouting` does not decode URLs directly.
 - `ACRouting` does not own a global route registry.
 - `ACRouting` does not persist or restore navigation state in `v1.5.0`.

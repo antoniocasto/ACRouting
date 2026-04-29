@@ -180,17 +180,16 @@ private enum TestDeepLinkPayload: String, Codable, Hashable, Sendable {
 @Suite("RoutedNavigationIntent")
 struct RoutedNavigationIntentTests {
 
-    @Test("Intent stores presentation and payload")
-    func storesPresentationAndPayload() {
-        let intent = RoutedNavigationIntent(presentation: .sheet, payload: TestDeepLinkPayload.detail)
+    @Test("Intent stores payload")
+    func storesPayload() {
+        let intent = RoutedNavigationIntent(payload: TestDeepLinkPayload.detail)
 
-        #expect(intent.presentation == .sheet)
         #expect(intent.payload == .detail)
     }
 
     @Test("Intent round-trips through JSON")
     func jsonRoundTrip() throws {
-        let intent = RoutedNavigationIntent(presentation: .fullScreenCover, payload: TestDeepLinkPayload.settings)
+        let intent = RoutedNavigationIntent(payload: TestDeepLinkPayload.settings)
 
         let data = try JSONEncoder().encode(intent)
         let decoded = try JSONDecoder().decode(RoutedNavigationIntent<TestDeepLinkPayload>.self, from: data)
@@ -200,14 +199,14 @@ struct RoutedNavigationIntentTests {
 
     @Test("Resolution records presented intent")
     func resolutionPresentedValue() {
-        let intent = RoutedNavigationIntent(presentation: .push, payload: TestDeepLinkPayload.detail)
+        let intent = RoutedNavigationIntent(payload: TestDeepLinkPayload.detail)
 
         #expect(RoutedNavigationResolution.presented(intent).intent == intent)
     }
 
     @Test("Resolution records unsupported intent")
     func resolutionUnsupportedValue() {
-        let intent = RoutedNavigationIntent(presentation: .push, payload: TestDeepLinkPayload.settings)
+        let intent = RoutedNavigationIntent(payload: TestDeepLinkPayload.settings)
 
         #expect(RoutedNavigationResolution.unsupported(intent).intent == intent)
     }
