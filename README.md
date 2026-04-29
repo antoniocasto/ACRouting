@@ -271,6 +271,36 @@ Button("Back to root") {
 - `.sheet`: presents a new modal navigation context with its own routed flow.
 - `.fullScreenCover`: presents a fullscreen modal navigation context on iOS and a sheet-backed equivalent on macOS.
 
+## Deep-Link Input Modeling
+
+`ACRouting` can accept serializable navigation intent without taking ownership of app screen assembly.
+
+```swift
+enum AppRoute: Codable, Hashable, Sendable {
+    case detail(id: Int)
+}
+
+struct AppRouteResolver: RoutedNavigationIntentResolving {
+    let builder: AppFeatureBuilder
+
+    func canResolve(_ payload: AppRoute) -> Bool {
+        true
+    }
+
+    func destination(for payload: AppRoute, router: any Router) -> some View {
+        switch payload {
+        case .detail(let id):
+            builder.makeDetail(id: id, router: AppFeatureRouter(router: router, builder: builder))
+        }
+    }
+}
+
+let intent = RoutedNavigationIntent(presentation: .push, payload: AppRoute.detail(id: 42))
+let result = router.showScreen(intent, using: AppRouteResolver(builder: builder))
+```
+
+Unsupported payloads return `.unsupported(intent)` and do not present a screen. URL parsing, payload decoding, and feature-module construction remain app-owned responsibilities.
+
 ## Supported Modal Layering in `1.4.4`
 
 First-class supported flows:

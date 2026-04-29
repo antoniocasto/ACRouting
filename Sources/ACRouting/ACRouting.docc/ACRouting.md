@@ -82,10 +82,14 @@ For behavior details and supported limits, see <doc:PresentationSemantics>.
 ### Supporting Types
 
 - ``AnyDestination``
+- ``RoutedNavigationIntent``
+- ``RoutedNavigationResolution``
+- ``RoutedNavigationIntentResolving``
 - ``View/any()``
 - ``EnvironmentValues/router``
 
 ### Articles
 
 - <doc:BuilderFirstIntegration>
+- <doc:DeepLinkInputModeling>
 - <doc:PresentationSemantics>
