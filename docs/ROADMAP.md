@@ -46,8 +46,9 @@ This roadmap is intended to be the default planning source for future Codex chat
 - Public examples now show app-owned router adapters layered on top of `ACRouting` instead of moving screen construction into the package core.
 - Missing-router fallback behavior now emits debug guidance that explains how to wrap a flow in `RouterView` or pass a real router explicitly.
 - Regression coverage now includes builder-assembled push, sheet, full-screen, overlay, and independent router-context stack isolation.
+- Deep-link input modeling now stores app-owned serializable payloads and lets app-owned resolvers choose presentation style plus destination assembly.
 
-### Current supported behavior in `v1.4.4`
+### Current supported behavior in `v1.5.0`
 
 - Root flow with push navigation.
 - One routed `.sheet` flow with its own local push stack.
@@ -56,13 +57,15 @@ This roadmap is intended to be the default planning source for future Codex chat
 - A pushed child inside one routed `.sheet` or `.fullScreenCover` flow calling `dismissAncestorModal()` to close that first ancestor routed modal.
 - Builder-first integration through app-owned builders, factories, or router adapters while `ACRouting` owns only navigation state and presentation behavior.
 - Multiple independent `RouterView` contexts for tab roots or feature-scoped flows.
+- Serializable routed navigation intent payloads resolved through app-owned resolvers.
+- Resolver-selected presentation styles for supported typed navigation payloads.
 
-### Current gaps to address after `v1.4.4`
+### Current gaps to address after `v1.5.0`
 
 - Builder-first regression coverage is much stronger than before, but follow-up tests should continue locking down any small adapter or multi-context edge cases discovered during use.
 - Missing-router diagnostics are actionable, but they should stay preview-safe and avoid becoming noisy.
 - `AnyView` and `AnyDestination` still limit future state serialization and reconstruction work, but any cleanup in this area must preserve builder-owned assembly.
-- Deep-link and restoration boundaries are not yet defined around app-owned builders or resolvers.
+- Remaining reconstruction and restoration gaps are persisted payload compatibility, multi-entry deep-link stack reconstruction, and cross-context restoration across multiple `RouterView` roots.
 
 ## Priorities
 
@@ -241,14 +244,21 @@ The clarified integration model should get one stabilization pass before new cap
 
 - Deep-link input modeling release.
 - Add additive APIs that allow applications to drive navigation from serializable payloads or intent values while keeping screen assembly app-owned.
-- Define how push and modal entry points hand off payload resolution to app-owned builders or resolvers.
+- Define how payload resolution and presentation style selection are handed off to app-owned builders or resolvers.
 - Keep the current closure-based APIs first-class and fully supported.
 
-Needs deeper design before implementation:
+Already implemented:
 
-- the payload shape and how it scopes to app features or router contexts
-- how application builders or resolvers are provided to the package at the point of reconstruction
-- what happens on partial, invalid, or unsupported input
+- `RoutedNavigationIntent` stores only the app-owned serializable payload.
+- `RoutedNavigationIntentResolving` keeps presentation style selection and screen assembly in app-owned builders or resolvers.
+- `Router.showScreen(_:using:)` validates support before forwarding supported payloads and resolver-selected presentation styles to the existing closure-based presentation API.
+- Unsupported payloads return `.unsupported` without mutating router state.
+
+Deferred to later milestones:
+
+- multi-entry deep-link stack reconstruction
+- persisted restoration payload compatibility
+- cross-context restoration across multiple `RouterView` roots
 
 Why this version:
 Deep-link entry points are valuable, but only if they respect the existing builder-first ownership model.

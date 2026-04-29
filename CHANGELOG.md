@@ -7,6 +7,14 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-04-29
+
+### Added
+
+- Serializable routed navigation intent models for deep-link input handoff.
+- An app-owned resolver protocol and router convenience API for selecting presentation styles and presenting supported typed navigation payloads.
+- Documentation for deep-link input modeling boundaries in `v1.5.0`.
+
 ## [1.4.4] - 2026-04-21
 
 ### Added

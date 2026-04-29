@@ -153,6 +153,35 @@ public extension Router {
     }
 }
 
+public extension Router {
+    /// Presents a serializable routed navigation intent through an app-owned resolver.
+    ///
+    /// The resolver validates the payload before presentation, chooses the routed presentation
+    /// style, and builds the destination. Supported payloads delegate to `showScreen(_:destination:)`,
+    /// keeping the existing closure-based routing API as the runtime primitive. Unsupported
+    /// payloads return `.unsupported` and do not change router state.
+    ///
+    /// - Parameters:
+    ///   - intent: The serializable navigation intent to present.
+    ///   - resolver: The app-owned resolver that validates and builds the destination.
+    /// - Returns: The resolution result for the intent.
+    @discardableResult
+    func showScreen<Resolver>(
+        _ intent: RoutedNavigationIntent<Resolver.Payload>,
+        using resolver: Resolver
+    ) -> RoutedNavigationResolution<Resolver.Payload> where Resolver: RoutedNavigationIntentResolving {
+        guard resolver.canResolve(intent.payload) else {
+            return .unsupported(intent)
+        }
+
+        showScreen(resolver.presentation(for: intent.payload)) { router in
+            resolver.destination(for: intent.payload, router: router)
+        }
+
+        return .presented(intent)
+    }
+}
+
 // MARK: - Router environment injection
 
 public extension EnvironmentValues {

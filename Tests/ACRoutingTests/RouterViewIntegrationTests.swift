@@ -2,6 +2,25 @@ import Testing
 import SwiftUI
 @testable import ACRouting
 
+private enum RouterViewDeepLinkRoute: String, Codable, Hashable, Sendable {
+    case detail
+    case unsupported
+}
+
+private struct RouterViewDeepLinkResolver: RoutedNavigationIntentResolving {
+    func canResolve(_ payload: RouterViewDeepLinkRoute) -> Bool {
+        payload == .detail
+    }
+
+    func presentation(for payload: RouterViewDeepLinkRoute) -> SegueOption {
+        .push
+    }
+
+    func destination(for payload: RouterViewDeepLinkRoute, router: any Router) -> some View {
+        Text("RouterView \(payload.rawValue)")
+    }
+}
+
 // MARK: - RouterView Integration Tests
 //
 // RouterView is both a View and a Router. Since @State properties cannot be
@@ -98,6 +117,34 @@ struct RouterViewIntegrationTests {
 
         #expect(stackBox.stack.count == 3)
         #expect(Array(stackBox.stack.prefix(2)) == [first, second])
+    }
+
+    @Test("Supported routed intent mutates inherited push stack")
+    func supportedRoutedIntentMutatesInheritedPushStack() {
+        let first = AnyDestination(destination: Text("First"))
+        let second = AnyDestination(destination: Text("Second"))
+        let stackBox = StackBox([first, second])
+        let router: any Router = makeChildRouter(stackBox: stackBox)
+        let intent = RoutedNavigationIntent(payload: RouterViewDeepLinkRoute.detail)
+
+        let result = router.showScreen(intent, using: RouterViewDeepLinkResolver())
+
+        #expect(result == .presented(intent))
+        #expect(stackBox.stack.count == 3)
+        #expect(Array(stackBox.stack.prefix(2)) == [first, second])
+    }
+
+    @Test("Unsupported routed intent leaves inherited push stack unchanged")
+    func unsupportedRoutedIntentLeavesInheritedPushStackUnchanged() {
+        let sentinel = AnyDestination(destination: Text("Sentinel"))
+        let stackBox = StackBox([sentinel])
+        let router: any Router = makeChildRouter(stackBox: stackBox)
+        let intent = RoutedNavigationIntent(payload: RouterViewDeepLinkRoute.unsupported)
+
+        let result = router.showScreen(intent, using: RouterViewDeepLinkResolver())
+
+        #expect(result == .unsupported(intent))
+        #expect(stackBox.stack == [sentinel])
     }
 
     @Test("Independent child routers mutate only their own inherited stacks")

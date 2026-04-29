@@ -142,6 +142,22 @@ struct SegueOptionTests {
         #expect(SegueOption.fullScreenCover.createsNewNavigationStack == true)
     }
 
+    @Test("SegueOption encodes and decodes push")
+    func segueOptionCodablePushRoundTrip() throws {
+        let data = try JSONEncoder().encode(SegueOption.push)
+        let decoded = try JSONDecoder().decode(SegueOption.self, from: data)
+
+        #expect(decoded == .push)
+    }
+
+    @Test("SegueOption encodes and decodes fullScreenCover")
+    func segueOptionCodableFullScreenRoundTrip() throws {
+        let data = try JSONEncoder().encode(SegueOption.fullScreenCover)
+        let decoded = try JSONDecoder().decode(SegueOption.self, from: data)
+
+        #expect(decoded == .fullScreenCover)
+    }
+
     @Test("All three cases are distinct")
     func allCasesDistinct() {
         let push = SegueOption.push
@@ -151,6 +167,48 @@ struct SegueOptionTests {
         #expect(push != sheet)
         #expect(push != fullScreenCover)
         #expect(sheet != fullScreenCover)
+    }
+}
+
+// MARK: - RoutedNavigationIntent Tests
+
+private enum TestDeepLinkPayload: String, Codable, Hashable, Sendable {
+    case detail
+    case settings
+}
+
+@Suite("RoutedNavigationIntent")
+struct RoutedNavigationIntentTests {
+
+    @Test("Intent stores payload")
+    func storesPayload() {
+        let intent = RoutedNavigationIntent(payload: TestDeepLinkPayload.detail)
+
+        #expect(intent.payload == .detail)
+    }
+
+    @Test("Intent round-trips through JSON")
+    func jsonRoundTrip() throws {
+        let intent = RoutedNavigationIntent(payload: TestDeepLinkPayload.settings)
+
+        let data = try JSONEncoder().encode(intent)
+        let decoded = try JSONDecoder().decode(RoutedNavigationIntent<TestDeepLinkPayload>.self, from: data)
+
+        #expect(decoded == intent)
+    }
+
+    @Test("Resolution records presented intent")
+    func resolutionPresentedValue() {
+        let intent = RoutedNavigationIntent(payload: TestDeepLinkPayload.detail)
+
+        #expect(RoutedNavigationResolution.presented(intent).intent == intent)
+    }
+
+    @Test("Resolution records unsupported intent")
+    func resolutionUnsupportedValue() {
+        let intent = RoutedNavigationIntent(payload: TestDeepLinkPayload.settings)
+
+        #expect(RoutedNavigationResolution.unsupported(intent).intent == intent)
     }
 }
 

@@ -249,6 +249,32 @@ private struct BuilderDrivenFeatureRouterAdapter: BuilderDrivenFeatureRouting {
     }
 }
 
+private enum DeepLinkTestRoute: String, Codable, Hashable, Sendable {
+    case detail
+    case unsupported
+}
+
+private struct DeepLinkTestResolver: RoutedNavigationIntentResolving {
+    private(set) var supportedRoutes: Set<DeepLinkTestRoute> = [.detail]
+
+    func canResolve(_ payload: DeepLinkTestRoute) -> Bool {
+        supportedRoutes.contains(payload)
+    }
+
+    func presentation(for payload: DeepLinkTestRoute) -> SegueOption {
+        switch payload {
+        case .detail:
+            .fullScreenCover
+        case .unsupported:
+            .sheet
+        }
+    }
+
+    func destination(for payload: DeepLinkTestRoute, router: any Router) -> some View {
+        Text("Resolved \(payload.rawValue)")
+    }
+}
+
 // MARK: - Router Protocol Default Parameter Tests
 
 @Suite("Router protocol defaults")
@@ -524,6 +550,33 @@ struct BuilderFirstRouterAdapterTests {
         #expect(rootRouter.screenCalls.count == 1)
         #expect(destinationRouter.screenCalls.count == 1)
         #expect(destinationRouter.screenCalls[0].option == .sheet)
+    }
+
+    @Test("Supported routed intent uses resolver presentation")
+    func supportedRoutedIntentUsesResolverPresentation() throws {
+        let router = DestinationCapturingRouter()
+        let resolver = DeepLinkTestResolver()
+        let intent = RoutedNavigationIntent(payload: DeepLinkTestRoute.detail)
+
+        let result = router.showScreen(intent, using: resolver)
+
+        #expect(result == .presented(intent))
+        #expect(router.screenCalls.count == 1)
+        #expect(router.screenCalls[0].option == .fullScreenCover)
+
+        let _: AnyView = router.screenCalls[0].destination(MockRouter())
+    }
+
+    @Test("Unsupported routed intent does not present")
+    func unsupportedRoutedIntentDoesNotPresent() {
+        let router = DestinationCapturingRouter()
+        let resolver = DeepLinkTestResolver()
+        let intent = RoutedNavigationIntent(payload: DeepLinkTestRoute.unsupported)
+
+        let result = router.showScreen(intent, using: resolver)
+
+        #expect(result == .unsupported(intent))
+        #expect(router.screenCalls.isEmpty)
     }
 }
 
