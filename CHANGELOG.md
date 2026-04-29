@@ -7,6 +7,8 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-04-29
+
 ### Added
 
 - Serializable routed navigation intent models for deep-link input handoff.

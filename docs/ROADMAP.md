@@ -46,8 +46,9 @@ This roadmap is intended to be the default planning source for future Codex chat
 - Public examples now show app-owned router adapters layered on top of `ACRouting` instead of moving screen construction into the package core.
 - Missing-router fallback behavior now emits debug guidance that explains how to wrap a flow in `RouterView` or pass a real router explicitly.
 - Regression coverage now includes builder-assembled push, sheet, full-screen, overlay, and independent router-context stack isolation.
+- Deep-link input modeling now stores app-owned serializable payloads and lets app-owned resolvers choose presentation style plus destination assembly.
 
-### Current supported behavior in `v1.4.4`
+### Current supported behavior in `v1.5.0`
 
 - Root flow with push navigation.
 - One routed `.sheet` flow with its own local push stack.
@@ -56,8 +57,10 @@ This roadmap is intended to be the default planning source for future Codex chat
 - A pushed child inside one routed `.sheet` or `.fullScreenCover` flow calling `dismissAncestorModal()` to close that first ancestor routed modal.
 - Builder-first integration through app-owned builders, factories, or router adapters while `ACRouting` owns only navigation state and presentation behavior.
 - Multiple independent `RouterView` contexts for tab roots or feature-scoped flows.
+- Serializable routed navigation intent payloads resolved through app-owned resolvers.
+- Resolver-selected presentation styles for supported typed navigation payloads.
 
-### Current gaps to address after `v1.4.4`
+### Current gaps to address after `v1.5.0`
 
 - Builder-first regression coverage is much stronger than before, but follow-up tests should continue locking down any small adapter or multi-context edge cases discovered during use.
 - Missing-router diagnostics are actionable, but they should stay preview-safe and avoid becoming noisy.

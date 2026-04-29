@@ -56,6 +56,49 @@ let result = router.showScreen(intent, using: AppRouteResolver(builder: builder)
 
 If the resolver rejects the payload, the router returns `.unsupported(intent)` and does not present anything.
 
+## Architecture Examples
+
+In a small SwiftUI flow, the resolver can return the destination view directly:
+
+```swift
+func destination(for payload: AppRoute, router: any Router) -> some View {
+    switch payload {
+    case .detail(let id):
+        DetailView(id: id)
+    case .settings:
+        SettingsView()
+    }
+}
+```
+
+In an MVVM app, the resolver can create the view model at the composition boundary:
+
+```swift
+func destination(for payload: AppRoute, router: any Router) -> some View {
+    switch payload {
+    case .detail(let id):
+        DetailView(viewModel: DetailViewModel(id: id, service: detailService))
+    case .settings:
+        SettingsView(viewModel: SettingsViewModel(settingsStore: settingsStore))
+    }
+}
+```
+
+In a VIPER/RIB app, deep links and push notifications should enter through AppDelegate, a module wrapper, or a Root/Core RIB boundary. The resolver can then delegate module assembly to builders while passing the routed context to the feature router:
+
+```swift
+func destination(for payload: AppRoute, router: any Router) -> some View {
+    switch payload {
+    case .detail(let id):
+        detailBuilder.makeDetail(id: id, acRouter: router)
+    case .settings:
+        settingsBuilder.makeSettings(acRouter: router)
+    }
+}
+```
+
+This keeps `View` and `Presenter` types out of the deep-link entry point. Builders still assemble VIPER modules, and feature routers still own feature-specific navigation.
+
 ## Boundaries
 
 - `RoutedNavigationIntent` payloads must conform to `Codable`, `Hashable`, and `Sendable`.
