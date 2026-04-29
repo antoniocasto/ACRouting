@@ -142,6 +142,22 @@ struct SegueOptionTests {
         #expect(SegueOption.fullScreenCover.createsNewNavigationStack == true)
     }
 
+    @Test("SegueOption encodes and decodes push")
+    func segueOptionCodablePushRoundTrip() throws {
+        let data = try JSONEncoder().encode(SegueOption.push)
+        let decoded = try JSONDecoder().decode(SegueOption.self, from: data)
+
+        #expect(decoded == .push)
+    }
+
+    @Test("SegueOption encodes and decodes fullScreenCover")
+    func segueOptionCodableFullScreenRoundTrip() throws {
+        let data = try JSONEncoder().encode(SegueOption.fullScreenCover)
+        let decoded = try JSONDecoder().decode(SegueOption.self, from: data)
+
+        #expect(decoded == .fullScreenCover)
+    }
+
     @Test("All three cases are distinct")
     func allCasesDistinct() {
         let push = SegueOption.push
