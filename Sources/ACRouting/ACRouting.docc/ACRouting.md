@@ -11,7 +11,7 @@ Build predictable SwiftUI navigation flows while keeping screen assembly in your
 
 ## Current Package Version
 
-The currently documented public package release is `1.4.4`.
+The currently documented public package release is `1.5.0`.
 
 The hosted documentation at [acrouting.acasto.dev](https://acrouting.acasto.dev) is published from `main`, while this version marker reflects the latest tagged package release that includes the current public API surface.
 
@@ -65,6 +65,7 @@ For behavior details and supported limits, see <doc:PresentationSemantics>.
 ### Navigation Commands
 
 - ``Router/showScreen(_:destination:)``
+- ``Router/showScreen(_:using:)``
 - ``Router/dismissScreen()``
 - ``Router/dismissAncestorModal()``
 - ``Router/pop()``
@@ -82,10 +83,14 @@ For behavior details and supported limits, see <doc:PresentationSemantics>.
 ### Supporting Types
 
 - ``AnyDestination``
+- ``RoutedNavigationIntent``
+- ``RoutedNavigationResolution``
+- ``RoutedNavigationIntentResolving``
 - ``View/any()``
 - ``EnvironmentValues/router``
 
 ### Articles
 
 - <doc:BuilderFirstIntegration>
+- <doc:DeepLinkInputModeling>
 - <doc:PresentationSemantics>

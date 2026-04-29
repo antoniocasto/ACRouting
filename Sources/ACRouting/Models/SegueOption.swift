@@ -8,7 +8,7 @@
 import Foundation
 
 /// The routed presentation styles supported by ``Router/showScreen(_:destination:)``.
-public enum SegueOption {
+public enum SegueOption: Codable, Hashable, Sendable {
     /// Pushes the destination onto the current routed navigation stack.
     case push
 
