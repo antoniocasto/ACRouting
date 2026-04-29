@@ -117,26 +117,30 @@ struct RouterViewIntegrationTests {
 
     @Test("Supported routed intent mutates inherited push stack")
     func supportedRoutedIntentMutatesInheritedPushStack() {
-        let stackBox = StackBox()
+        let first = AnyDestination(destination: Text("First"))
+        let second = AnyDestination(destination: Text("Second"))
+        let stackBox = StackBox([first, second])
         let router: any Router = makeChildRouter(stackBox: stackBox)
         let intent = RoutedNavigationIntent(presentation: .push, payload: RouterViewDeepLinkRoute.detail)
 
         let result = router.showScreen(intent, using: RouterViewDeepLinkResolver())
 
         #expect(result == .presented(intent))
-        #expect(stackBox.stack.count == 1)
+        #expect(stackBox.stack.count == 3)
+        #expect(Array(stackBox.stack.prefix(2)) == [first, second])
     }
 
     @Test("Unsupported routed intent leaves inherited push stack unchanged")
     func unsupportedRoutedIntentLeavesInheritedPushStackUnchanged() {
-        let stackBox = StackBox()
+        let sentinel = AnyDestination(destination: Text("Sentinel"))
+        let stackBox = StackBox([sentinel])
         let router: any Router = makeChildRouter(stackBox: stackBox)
         let intent = RoutedNavigationIntent(presentation: .push, payload: RouterViewDeepLinkRoute.unsupported)
 
         let result = router.showScreen(intent, using: RouterViewDeepLinkResolver())
 
         #expect(result == .unsupported(intent))
-        #expect(stackBox.stack.isEmpty)
+        #expect(stackBox.stack == [sentinel])
     }
 
     @Test("Independent child routers mutate only their own inherited stacks")
