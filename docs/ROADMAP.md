@@ -62,7 +62,7 @@ This roadmap is intended to be the default planning source for future Codex chat
 - Builder-first regression coverage is much stronger than before, but follow-up tests should continue locking down any small adapter or multi-context edge cases discovered during use.
 - Missing-router diagnostics are actionable, but they should stay preview-safe and avoid becoming noisy.
 - `AnyView` and `AnyDestination` still limit future state serialization and reconstruction work, but any cleanup in this area must preserve builder-owned assembly.
-- Deep-link and restoration boundaries are not yet defined around app-owned builders or resolvers.
+- Remaining reconstruction and restoration gaps are persisted payload compatibility, multi-entry deep-link stack reconstruction, and cross-context restoration across multiple `RouterView` roots.
 
 ## Priorities
 
