@@ -244,11 +244,18 @@ The clarified integration model should get one stabilization pass before new cap
 - Define how push and modal entry points hand off payload resolution to app-owned builders or resolvers.
 - Keep the current closure-based APIs first-class and fully supported.
 
-Needs deeper design before implementation:
+Already implemented:
 
-- the payload shape and how it scopes to app features or router contexts
-- how application builders or resolvers are provided to the package at the point of reconstruction
-- what happens on partial, invalid, or unsupported input
+- `RoutedNavigationIntent` stores a serializable payload plus the routed presentation style.
+- `RoutedNavigationIntentResolving` keeps screen assembly in app-owned builders or resolvers.
+- `Router.showScreen(_:using:)` validates support before forwarding supported payloads to the existing closure-based presentation API.
+- Unsupported payloads return `.unsupported` without mutating router state.
+
+Deferred to later milestones:
+
+- multi-entry deep-link stack reconstruction
+- persisted restoration payload compatibility
+- cross-context restoration across multiple `RouterView` roots
 
 Why this version:
 Deep-link entry points are valuable, but only if they respect the existing builder-first ownership model.
