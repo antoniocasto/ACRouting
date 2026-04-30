@@ -7,6 +7,17 @@
 
 import SwiftUI
 
+enum FullScreenCoverDestinationPresentationBackend {
+    case sheet
+    case fullScreenCover
+}
+
+#if os(macOS)
+let fullScreenCoverDestinationPresentationBackend: FullScreenCoverDestinationPresentationBackend = .sheet
+#else
+let fullScreenCoverDestinationPresentationBackend: FullScreenCoverDestinationPresentationBackend = .fullScreenCover
+#endif
+
 extension View {
     /// Presents a full-screen routed destination whenever one is available.
     ///

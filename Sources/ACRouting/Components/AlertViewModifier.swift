@@ -7,6 +7,11 @@
 
 import SwiftUI
 
+@MainActor
+func routerAlertIsPresentedBinding(_ configuration: Binding<AnyAppAlert?>) -> Binding<Bool> {
+    Binding(ifNotNil: configuration)
+}
+
 extension View {
     /// Applies the package alert presentation associated with the current router state.
     @ViewBuilder
@@ -28,7 +33,7 @@ extension View {
         configuration: Binding<AnyAppAlert?>
     ) -> some View {
         content
-            .alert(configuration.wrappedValue?.title ?? "", isPresented: Binding(ifNotNil: configuration)) {
+            .alert(configuration.wrappedValue?.title ?? "", isPresented: routerAlertIsPresentedBinding(configuration)) {
                 if let actions = configuration.wrappedValue?.actions {
                     actions()
                 }
@@ -45,7 +50,7 @@ extension View {
         configuration: Binding<AnyAppAlert?>
     ) -> some View {
         content
-            .confirmationDialog(configuration.wrappedValue?.title ?? "", isPresented: Binding(ifNotNil: configuration)) {
+            .confirmationDialog(configuration.wrappedValue?.title ?? "", isPresented: routerAlertIsPresentedBinding(configuration)) {
                 if let actions = configuration.wrappedValue?.actions {
                     actions()
                 }

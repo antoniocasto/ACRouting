@@ -108,4 +108,5 @@ This keeps `View` and `Presenter` types out of the deep-link entry point. Builde
 - `ACRouting` does not decode URLs directly.
 - `ACRouting` does not own a global route registry.
 - `ACRouting` does not persist or restore navigation state in `v1.5.1`.
+- Future restoration should treat payload schema versions and resolver presentation rules as app-owned compatibility boundaries.
 - Multi-step restoration remains future work after the deep-link payload boundary is stable.
