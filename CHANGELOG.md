@@ -7,6 +7,22 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.5.2] - 2026-05-02
+
+### Changed
+
+- Hardened CI to run for pull requests and pushes targeting both `develop` and `main`.
+- Replaced `xcpretty`-dependent workflow steps with raw `xcodebuild` output and separate iOS/macOS result bundles.
+- Added real iOS simulator test execution alongside the existing macOS test lane.
+- Clarified concrete `RouterView.showModal` overlay builder timing in README and DocC.
+- Added a future `v1.5.3` roadmap note for additive API ergonomics around overlays and alert actions.
+
+### Fixed
+
+- Removed fragile hash-value distinctness coverage in favor of identity/equality-based assertions.
+- Added coverage that characterizes concrete `RouterView.showModal` overlay builder evaluation.
+- Removed maintainer-only hosted documentation setup notes from the public repository surface.
+
 ## [1.5.1] - 2026-04-29
 
 ### Fixed

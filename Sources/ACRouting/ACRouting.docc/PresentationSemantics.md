@@ -44,6 +44,7 @@ Unlike routed sheets or full-screen covers:
 - it does not create a fresh routed flow
 - it does not own a separate push stack
 - it keeps using the current router context
+- the concrete ``RouterView`` evaluates and stores the overlay content when ``Router/showModal(backgroundColor:backgroundTransition:animation:backgroundTapDismissesModal:screen:)`` is called
 
 This makes it a good fit for custom alerts, transient confirmations, and blocking loading UI.
 

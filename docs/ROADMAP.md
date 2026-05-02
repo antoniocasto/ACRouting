@@ -22,6 +22,7 @@ This roadmap is intended to be the default planning source for future Codex chat
 - Any future data-driven or typed navigation inputs must carry serializable navigation intent only, never concrete `View` types or module dependencies.
 - CI must validate the normal contribution path, which means pull requests targeting `develop` as well as protected release branches.
 - Restoration must not ship as a broad feature until its persisted payload envelope, schema versioning, and resolver policy versioning are documented.
+- Maintainer-only hosted documentation setup notes must not be exposed from the public repository; `docs/HostedDocumentation.md` should be removed rather than only unlinked.
 
 ## Architectural Contract
 
@@ -50,7 +51,7 @@ This roadmap is intended to be the default planning source for future Codex chat
 - Regression coverage now includes builder-assembled push, sheet, full-screen, overlay, and independent router-context stack isolation.
 - Deep-link input modeling now stores app-owned serializable payloads and lets app-owned resolvers choose presentation style plus destination assembly.
 
-### Current supported behavior after `v1.5.1`
+### Current supported behavior after `v1.5.2`
 
 - Root flow with push navigation.
 - One routed `.sheet` flow with its own local push stack.
@@ -62,7 +63,7 @@ This roadmap is intended to be the default planning source for future Codex chat
 - Serializable routed navigation intent payloads resolved through app-owned resolvers.
 - Resolver-selected presentation styles for supported typed navigation payloads.
 
-### Current gaps to address after `v1.5.1`
+### Current gaps to address after `v1.5.2`
 
 - Builder-first regression coverage is much stronger than before, but follow-up tests should continue locking down any small adapter or multi-context edge cases discovered during use.
 - Missing-router diagnostics are actionable, but they should stay preview-safe and avoid becoming noisy.
@@ -307,12 +308,41 @@ Input-driven navigation is behavior-heavy and benefits from a dedicated stabiliz
 - Align CI triggers with the repository's PR flow toward `develop`.
 - Replace, install, or remove reliance on `xcpretty` in GitHub Actions.
 - Add an iOS simulator test lane or equivalent automation that executes non-macOS presentation branches.
+- Remove `docs/HostedDocumentation.md` from the repository and stop exposing maintainer-only hosting setup notes from public docs.
 - Clarify `showModal` overlay builder timing in docs and tests.
 - Trim fragile or duplicated tests where they do not protect meaningful behavior.
 - Do not introduce a new routing feature family in this release.
 
+Already implemented:
+
+- CI now runs for pull requests and pushes targeting both `develop` and `main`.
+- The CI workflow no longer depends on `xcpretty`.
+- The automated suite now runs through an iOS simulator lane as well as macOS.
+- `docs/HostedDocumentation.md` was removed from the repository, and public docs no longer link to maintainer-only hosting setup notes.
+- `showModal` overlay builder timing is documented and covered by tests for the concrete `RouterView`.
+- Fragile hash-value distinctness coverage was removed in favor of identity/equality assertions.
+
 Why this version:
 The package should have reliable automation and sharper behavioral tests before `v1.6.0` starts persisting or rebuilding navigation state.
+
+### v1.5.3
+
+- Public API ergonomics patch.
+- Add additive `showModal` builder overloads only if they reduce call-site friction without changing overlay timing or routed-context ownership.
+- Improve alert and confirmation action ergonomics without removing the existing `AnyView`-based button APIs.
+- Document `AnyView`, `AnyDestination`, and `View.any()` as low-level compatibility tools rather than preferred app-facing patterns.
+- Keep all improvements source-compatible and avoid introducing package-owned route registries or typed routing requirements.
+- Do not include restoration, persisted payload envelopes, or multi-entry stack reconstruction in this patch.
+
+Needs deeper design before implementation:
+
+- whether `showModal` should gain an explicit `@ViewBuilder` overload, a role-labeled content closure, or both
+- how to improve alert action call sites while preserving the existing `@Sendable () -> AnyView` contract for external conformers
+- whether any new ergonomic overload should live only on `Router` protocol extensions to avoid widening conformer requirements
+- which examples should be updated so ergonomics guidance remains builder-first and does not imply package-owned screen assembly
+
+Why this version:
+The ergonomics work is valuable, but it should stay separate from `v1.5.2` CI hardening so the release before restoration remains operationally focused.
 
 ### v1.6.0
 
