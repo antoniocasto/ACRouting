@@ -67,11 +67,11 @@ This roadmap is intended to be the default planning source for future Codex chat
 
 - Builder-first regression coverage is much stronger than before, but follow-up tests should continue locking down any small adapter or multi-context edge cases discovered during use.
 - Missing-router diagnostics are actionable, but they should stay preview-safe and avoid becoming noisy.
-- CI needs operational hardening so PRs toward `develop` receive the same test signal expected by the repository workflow, and the runner should not depend on uninstalled formatting tools such as `xcpretty`.
-- The current automated suite protects core state behavior well, but it still needs thin runtime-level checks for actual SwiftUI presentation wiring on the supported platforms.
+- CI now matches the repository workflow better, but it should keep evolving as branch protection, runner images, or platform test lanes change.
+- The current automated suite protects core state behavior well, but runtime-level coverage for real SwiftUI presentation wiring can still expand as practical tooling improves.
 - `AnyView`, `AnyDestination`, and `View.any()` still limit future state serialization and reconstruction work, but any cleanup in this area must preserve builder-owned assembly.
 - Alert actions and overlay builders now have typed builder conveniences, while the underlying `AnyView` compatibility APIs remain available for existing consumers.
-- `showModal` intentionally differs from routed presentations because it evaluates and stores overlay content in the current router context; docs and tests should make that timing explicit.
+- `showModal` intentionally differs from routed presentations because it evaluates and stores overlay content in the current router context; future changes should preserve that documented and tested timing.
 - Remaining reconstruction and restoration gaps are persisted payload compatibility, multi-entry deep-link stack reconstruction, and cross-context restoration across multiple `RouterView` roots.
 
 ## Priorities

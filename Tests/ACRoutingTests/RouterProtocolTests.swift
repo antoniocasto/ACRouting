@@ -322,6 +322,20 @@ struct RouterProtocolDefaultsTests {
         #expect(spy.showAlertCalls[0].hasButtons == true)
     }
 
+    @Test("showAlert action-builder overload works through existential router")
+    func showAlertActionBuilderOverloadWorksThroughExistentialRouter() {
+        let spy = SpyRouter()
+        let router: any Router = spy
+
+        router.showAlert(.alert, title: "Saved") {
+            Button("OK", role: .cancel) {}
+        }
+
+        #expect(spy.showAlertCalls.count == 1)
+        #expect(spy.showAlertCalls[0].title == "Saved")
+        #expect(spy.showAlertCalls[0].hasButtons == true)
+    }
+
     @Test("showErrorAlert can be called with error only")
     func showErrorAlertMinimalParams() {
         let spy = SpyRouter()
@@ -347,6 +361,21 @@ struct RouterProtocolDefaultsTests {
         #expect(spy.showErrorAlertCalls[0].hasButtons == true)
     }
 
+    @Test("showErrorAlert action-builder overload works through existential router")
+    func showErrorAlertActionBuilderOverloadWorksThroughExistentialRouter() {
+        let spy = SpyRouter()
+        let router: any Router = spy
+        let error = NSError(domain: "test", code: 1, userInfo: [NSLocalizedDescriptionKey: "Oops"])
+
+        router.showErrorAlert(error: error) {
+            Button("OK", role: .cancel) {}
+        }
+
+        #expect(spy.showErrorAlertCalls.count == 1)
+        #expect(spy.showErrorAlertCalls[0].errorDescription == "Oops")
+        #expect(spy.showErrorAlertCalls[0].hasButtons == true)
+    }
+
     @Test("showConfirmationDialog forwards as confirmation dialog")
     func showConfirmationDialogForwardsAsConfirmationDialog() {
         let spy = SpyRouter()
@@ -359,6 +388,22 @@ struct RouterProtocolDefaultsTests {
         #expect(spy.showAlertCalls.count == 1)
         #expect(spy.showAlertCalls[0].option == .confirmationDialog)
         #expect(spy.showAlertCalls[0].title == "Archive")
+        #expect(spy.showAlertCalls[0].subtitle == "Restore later")
+        #expect(spy.showAlertCalls[0].hasButtons == true)
+    }
+
+    @Test("showConfirmationDialog works through existential router")
+    func showConfirmationDialogWorksThroughExistentialRouter() {
+        let spy = SpyRouter()
+        let router: any Router = spy
+
+        router.showConfirmationDialog(title: "Archive", message: "Restore later") {
+            Button("Archive") {}
+            Button("Cancel", role: .cancel) {}
+        }
+
+        #expect(spy.showAlertCalls.count == 1)
+        #expect(spy.showAlertCalls[0].option == .confirmationDialog)
         #expect(spy.showAlertCalls[0].subtitle == "Restore later")
         #expect(spy.showAlertCalls[0].hasButtons == true)
     }
@@ -393,6 +438,21 @@ struct RouterProtocolDefaultsTests {
         let spy = SpyRouter()
 
         spy.showModal {
+            Text("Title")
+            Button("Continue") {}
+        }
+
+        #expect(spy.showModalCalls.count == 1)
+        #expect(spy.showModalCalls[0].backgroundColor == Color.black.opacity(0.6))
+        #expect(spy.showModalCalls[0].backgroundTapDismissesModal == true)
+    }
+
+    @Test("showModal view-builder overload works through existential router")
+    func showModalViewBuilderOverloadWorksThroughExistentialRouter() {
+        let spy = SpyRouter()
+        let router: any Router = spy
+
+        router.showModal {
             Text("Title")
             Button("Continue") {}
         }
