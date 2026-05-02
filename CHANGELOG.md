@@ -7,6 +7,14 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Added source-compatible `Router` overloads for typed alert actions, error-alert actions, confirmation dialogs, and `@ViewBuilder` overlay content.
+
+### Changed
+
+- Updated README, DocC, and preview catalog examples to prefer typed builder call sites over manual `AnyView` wrapping.
+
 ## [1.5.2] - 2026-05-02
 
 ### Changed

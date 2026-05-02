@@ -4,7 +4,7 @@
 
 **Goal:** Ship additive `Router` ergonomics for overlays, alerts, and confirmation dialogs, then update docs and preview examples to make those call sites the preferred public path.
 
-**Architecture:** All new public behavior lives in `Router` protocol extensions so existing external conformers remain source-compatible. The overloads erase builder output to existing `AnyView` and `showModal(...screen:)` requirements internally, preserving current state storage and overlay timing semantics.
+**Architecture:** New alert and confirmation behavior lives in `Router` protocol extensions so existing external conformers remain source-compatible. The alert overloads erase builder output to existing `AnyView` requirements internally, and the default `showModal(...screen:)` helper gains `@ViewBuilder` support while preserving current state storage and overlay timing semantics.
 
 **Tech Stack:** Swift 6.2, SwiftUI, Swift Testing, Swift Package Manager, DocC Markdown.
 
@@ -14,7 +14,7 @@
 
 - `Sources/ACRouting/Core/Router.swift`: add additive protocol-extension overloads and documentation comments.
 - `Tests/ACRoutingTests/RouterProtocolTests.swift`: add forwarding/source-compatibility coverage for the new overloads.
-- `Tests/ACRoutingTests/RouterViewIntegrationTests.swift`: add concrete `RouterView` timing coverage for the explicit `content:` overlay overload.
+- `Tests/ACRoutingTests/RouterViewIntegrationTests.swift`: add concrete `RouterView` timing coverage for the `@ViewBuilder` overlay helper.
 - `README.md`: update current examples and compatibility guidance for `1.5.3`.
 - `Sources/ACRouting/ACRouting.docc/ACRouting.md`: update current version notes and topic links.
 - `Sources/ACRouting/ACRouting.docc/PresentationSemantics.md`: document alert and overlay ergonomics.
@@ -88,31 +88,30 @@ func showConfirmationDialogForwardsAsConfirmationDialog() {
     #expect(spy.showAlertCalls[0].hasButtons == true)
 }
 
-@Test("showModal content overload forwards defaults")
-func showModalContentOverloadForwardsDefaults() {
+@Test("showModal view-builder overload forwards defaults")
+func showModalViewBuilderOverloadForwardsDefaults() {
     let spy = SpyRouter()
 
-    spy.showModal(content: {
+    spy.showModal {
         Text("Title")
         Button("Continue") {}
-    })
+    }
 
     #expect(spy.showModalCalls.count == 1)
     #expect(spy.showModalCalls[0].backgroundColor == Color.black.opacity(0.6))
     #expect(spy.showModalCalls[0].backgroundTapDismissesModal == true)
 }
 
-@Test("showModal content overload forwards custom configuration")
-func showModalContentOverloadForwardsCustomConfiguration() {
+@Test("showModal view-builder overload forwards custom configuration")
+func showModalViewBuilderOverloadForwardsCustomConfiguration() {
     let spy = SpyRouter()
 
     spy.showModal(
         backgroundColor: .red,
-        backgroundTapDismissesModal: false,
-        content: {
-            Text("Modal")
-        }
-    )
+        backgroundTapDismissesModal: false
+    ) {
+        Text("Modal")
+    }
 
     #expect(spy.showModalCalls.count == 1)
     #expect(spy.showModalCalls[0].backgroundColor == .red)
@@ -128,13 +127,17 @@ Run:
 swift test --filter RouterProtocolTests
 ```
 
-Expected: compile fails because `showConfirmationDialog` and `showModal(content:)` do not exist yet, or overload resolution cannot find the new action-builder signatures.
+Expected: compile fails because `showConfirmationDialog` does not exist yet, the alert action-builder overloads do not exist yet, or multi-view `showModal` content cannot compile through the existing non-`@ViewBuilder` helper.
 
 - [ ] **Step 4: Implement additive overloads in `Router.swift`**
 
 Add protocol-extension methods without changing the `Router` requirements:
 
 ```swift
+private struct SendableErasedView: @unchecked Sendable {
+    let view: AnyView
+}
+
 /// Presents an alert or confirmation dialog with SwiftUI action content.
 func showAlert<Actions: View>(
     _ option: AlertType,
@@ -142,9 +145,10 @@ func showAlert<Actions: View>(
     subtitle: String? = nil,
     @ViewBuilder actions: @escaping @Sendable () -> Actions
 ) {
-    showAlert(option, title: title, subtitle: subtitle) {
-        AnyView(actions())
-    }
+    let erasedActions = SendableErasedView(view: AnyView(actions()))
+    showAlert(option, title: title, subtitle: subtitle, buttons: {
+        erasedActions.view
+    })
 }
 
 /// Presents an error alert with SwiftUI action content.
@@ -152,9 +156,10 @@ func showErrorAlert<Actions: View>(
     error: any Error,
     @ViewBuilder actions: @escaping @Sendable () -> Actions
 ) {
-    showErrorAlert(error: error) {
-        AnyView(actions())
-    }
+    let erasedActions = SendableErasedView(view: AnyView(actions()))
+    showErrorAlert(error: error, buttons: {
+        erasedActions.view
+    })
 }
 
 /// Presents a confirmation dialog with SwiftUI action content.
@@ -163,43 +168,49 @@ func showConfirmationDialog<Actions: View>(
     message: String? = nil,
     @ViewBuilder actions: @escaping @Sendable () -> Actions
 ) {
-    showAlert(.confirmationDialog, title: title, subtitle: message) {
-        AnyView(actions())
-    }
+    let erasedActions = SendableErasedView(view: AnyView(actions()))
+    showAlert(.confirmationDialog, title: title, subtitle: message, buttons: {
+        erasedActions.view
+    })
 }
 
-/// Presents a lightweight overlay with multi-view builder content.
+/// Presents a lightweight overlay using the package's default presentation configuration.
 func showModal<Content: View>(
     backgroundColor: Color = Color.black.opacity(0.6),
     backgroundTransition: AnyTransition = .opacity.animation(.smooth),
     animation: Animation = .smooth,
     backgroundTapDismissesModal: Bool = true,
-    @ViewBuilder content: @escaping () -> Content
+    @ViewBuilder screen: @escaping () -> Content
 ) {
     showModal(
         backgroundColor: backgroundColor,
         backgroundTransition: backgroundTransition,
         animation: animation,
         backgroundTapDismissesModal: backgroundTapDismissesModal,
-        screen: content
+        screen: screen
     )
 }
 ```
 
-- [ ] **Step 5: Add concrete timing test for `showModal(content:)`**
+- [ ] **Step 5: Add concrete timing test for multi-view `showModal`**
 
 Add near the existing concrete timing test:
 
 ```swift
-@Test("Concrete RouterView showModal content overload evaluates overlay builder immediately")
-func concreteShowModalContentOverloadEvaluatesOverlayBuilderImmediately() {
+@Test("Concrete RouterView showModal view-builder overload evaluates overlay builder immediately")
+func concreteShowModalViewBuilderOverloadEvaluatesOverlayBuilderImmediately() {
     let router: any Router = RouterView { _ in Text("Root") }
     var builderEvaluationCount = 0
 
-    router.showModal(content: {
+    func countedContent() -> some View {
         builderEvaluationCount += 1
         return Text("Modal Content")
-    })
+    }
+
+    router.showModal {
+        countedContent()
+        Button("Continue") {}
+    }
 
     #expect(builderEvaluationCount == 1)
 }
@@ -267,10 +278,10 @@ router.showConfirmationDialog(
 Add an overlay builder example:
 
 ```swift
-router.showModal(content: {
+router.showModal {
     Text("Confirm")
     Button("Continue") {}
-})
+}
 ```
 
 Add compatibility note:
@@ -285,13 +296,13 @@ Update `ACRouting.md` version notes and topic lists to include:
 
 ```markdown
 - ``Router/showConfirmationDialog(title:message:actions:)``
-- ``Router/showModal(backgroundColor:backgroundTransition:animation:backgroundTapDismissesModal:content:)``
+- ``Router/showModal(backgroundColor:backgroundTransition:animation:backgroundTapDismissesModal:screen:)``
 ```
 
 Update `PresentationSemantics.md` to explain:
 
 ```markdown
-The `content:` overlay overload is an ergonomic builder wrapper over the existing overlay API. It still stores overlay content in the current routed context and does not create a routed modal container.
+The `@ViewBuilder` overlay helper is an ergonomic wrapper over the existing overlay API. It still stores overlay content in the current routed context and does not create a routed modal container.
 
 Alert and confirmation dialog action-builder overloads erase their actions internally, so application call sites do not need to wrap actions in `AnyView`.
 ```
@@ -337,7 +348,7 @@ router.showConfirmationDialog(
 }
 ```
 
-Keep the simple existing `showModal { OverlayExampleCard() }` style in the preview catalog because that demo presents a single overlay view. The README and DocC examples will show the explicit `content:` form for multi-view overlay content.
+Keep the simple existing `showModal { OverlayExampleCard() }` style in the preview catalog because that demo presents a single overlay view. The README and DocC examples will show the same trailing-closure spelling with multi-view overlay content.
 
 - [ ] **Step 4: Update changelog and roadmap**
 
@@ -358,7 +369,7 @@ In `docs/ROADMAP.md`, add an `Already implemented` subsection under `v1.5.3` aft
 ```markdown
 Already implemented:
 
-- Additive `Router` extension overloads now support typed alert actions, error-alert actions, confirmation dialogs, and explicit `content:` overlay builders.
+- Additive `Router` extension overloads now support typed alert actions, error-alert actions, and confirmation dialogs, while the default `showModal` helper now supports multi-view `@ViewBuilder` overlay content.
 - README, DocC, and the preview catalog now show the ergonomic call sites as the preferred public examples.
 - Compatibility guidance now treats `AnyDestination`, `View.any()`, and `AnyView` alert actions as low-level type-erasure surfaces rather than preferred app-facing patterns.
 ```

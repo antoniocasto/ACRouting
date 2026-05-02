@@ -28,32 +28,24 @@ This release should make the preferred examples less dependent on direct `AnyVie
 
 ### Overlay Ergonomics
 
-Add an ergonomic overlay overload on `Router` as a protocol extension, not as a new protocol requirement.
+Improve the existing ergonomic overlay helper on `Router` as a protocol extension, not as a new protocol requirement.
 
-The existing trailing-closure spelling remains valid for simple one-view overlays:
+The existing trailing-closure spelling remains valid and should become more capable for multi-view overlays:
 
 ```swift
 router.showModal {
     MyCustomOverlay()
 }
-```
 
-The new multi-view builder spelling uses an explicit `content:` label to avoid ambiguity with the existing `screen:` closure overload while adding `@ViewBuilder` support:
-
-```swift
-router.showModal(content: {
+router.showModal(backgroundTapDismissesModal: false) {
     Text("Confirm")
-    Button("Continue") {}
-})
-
-router.showModal(backgroundTapDismissesModal: false, content: {
     ConfirmingOverlay()
-})
+}
 ```
 
-The overload delegates to the existing `showModal(backgroundColor:backgroundTransition:animation:backgroundTapDismissesModal:screen:)` requirement. Existing conformers do not need to implement anything new.
+The default protocol-extension helper should add `@ViewBuilder` support to its existing `screen` closure and continue delegating to the existing `showModal(backgroundColor:backgroundTransition:animation:backgroundTapDismissesModal:screen:)` requirement. Existing conformers do not need to implement anything new.
 
-Semantic constraint: concrete `RouterView` should still evaluate and store overlay content in the current routed context when `showModal` is called. The overload must not turn overlays into routed modal flows.
+Semantic constraint: concrete `RouterView` should still evaluate and store overlay content in the current routed context when `showModal` is called. The helper must not turn overlays into routed modal flows.
 
 ### Alert Action Ergonomics
 
@@ -105,7 +97,7 @@ README updates:
 - bump current examples and supported-modal wording from `1.5.2` to `1.5.3`
 - replace alert examples that manually wrap `AnyView`
 - add a confirmation-dialog convenience example
-- show the simple trailing-closure overlay call site and the explicit `content:` builder call site when multi-view overlay content is useful
+- show the simple trailing-closure overlay call site with multi-view builder content when useful
 - add a short compatibility note for `AnyView`, `AnyDestination`, and `View.any()`
 
 DocC updates:
@@ -126,7 +118,7 @@ Changes:
 
 - replace `.any()` usage in the primary alert and confirmation examples with the new action-builder overloads
 - change the confirmation demo to call `showConfirmationDialog`
-- keep the custom overlay demo in place and use the explicit `content:` spelling only if the preview needs multi-view builder content
+- keep the custom overlay demo in place and continue using the existing `showModal { ... }` spelling
 - avoid adding a new full demo flow because the preview catalog is already large
 
 The preview catalog remains a study tool for currently supported behavior, not a marketing surface for unsupported future routing.
@@ -140,7 +132,7 @@ Router protocol tests should cover:
 - `showAlert` action-builder overload forwards option, title, message, and actions
 - `showErrorAlert` action-builder overload forwards error and actions
 - `showConfirmationDialog` forwards as `.confirmationDialog`
-- the preferred `showModal` overload forwards defaults and custom configuration
+- the preferred `showModal` `@ViewBuilder` helper forwards defaults and custom configuration
 - existing `AnyView`-based alert APIs remain callable
 
 Router view integration tests should continue to cover concrete `showModal` timing:
