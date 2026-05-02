@@ -160,7 +160,7 @@ struct RouterViewIntegrationTests {
 
         #expect(firstStackBox.stack.count == 1)
         #expect(secondStackBox.stack.count == 1)
-        #expect(firstStackBox.stack[0] != secondStackBox.stack[0])
+        #expect(firstStackBox.stack[0].id != secondStackBox.stack[0].id)
     }
 
     @Test("Clearing one inherited child stack does not affect another router context")
@@ -216,6 +216,19 @@ struct RouterViewIntegrationTests {
     func showModal() {
         let router: any Router = RouterView { _ in Text("Root") }
         router.showModal { Text("Modal Content") }
+    }
+
+    @Test("Concrete RouterView showModal evaluates the overlay builder immediately")
+    func concreteShowModalEvaluatesOverlayBuilderImmediately() {
+        let router: any Router = RouterView { _ in Text("Root") }
+        var builderEvaluationCount = 0
+
+        router.showModal {
+            builderEvaluationCount += 1
+            return Text("Modal Content")
+        }
+
+        #expect(builderEvaluationCount == 1)
     }
 
     @Test("dismissModal is callable")
