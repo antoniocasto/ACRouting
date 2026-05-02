@@ -77,6 +77,7 @@ struct AppRoot: View {
 - The builder stays responsible for constructing screens and dependencies.
 - ``Router/showScreen(_:destination:)`` still receives the `Router` for the new routed context, so the adapter can recreate itself for the next screen.
 - Push, sheet, full-screen, alert, and overlay semantics remain centralized in `ACRouting`.
+- Ergonomic alert and overlay builders keep action and overlay assembly at the app boundary; they do not move screen construction into `ACRouting`.
 
 ## When To Skip The Adapter
 

@@ -48,9 +48,23 @@ Unlike routed sheets or full-screen covers:
 
 This makes it a good fit for custom alerts, transient confirmations, and blocking loading UI.
 
+The default helper accepts `@ViewBuilder` overlay content. That improves multi-view overlay call sites without changing the timing above or turning overlays into routed modal containers.
+
 ## Alerts
 
 Use ``Router/showAlert(_:title:subtitle:buttons:)`` or ``Router/showErrorAlert(error:buttons:)`` to present SwiftUI alerts from the current routed context. Dismiss them with ``Router/dismissAlert()``.
+
+For new application call sites, prefer the typed action-builder overloads:
+
+- ``Router/showAlert(_:title:subtitle:actions:)``
+- ``Router/showErrorAlert(error:actions:)``
+- ``Router/showConfirmationDialog(title:message:actions:)``
+
+Those helpers erase action content internally so feature code can write normal SwiftUI `Button` values without wrapping them in `AnyView`. They do not change alert ownership: the current ``RouterView`` still owns the alert configuration.
+
+## Type-Erased Compatibility
+
+`AnyView` alert actions, ``AnyDestination``, and ``View/any()`` remain available for source compatibility and internal type erasure. Treat them as low-level support surfaces rather than the preferred style for new app-facing examples.
 
 ## Missing Router Diagnostics
 

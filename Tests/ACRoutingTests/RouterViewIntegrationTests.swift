@@ -231,6 +231,24 @@ struct RouterViewIntegrationTests {
         #expect(builderEvaluationCount == 1)
     }
 
+    @Test("Concrete RouterView showModal view-builder overload evaluates overlay builder immediately")
+    func concreteShowModalViewBuilderOverloadEvaluatesOverlayBuilderImmediately() {
+        let router: any Router = RouterView { _ in Text("Root") }
+        var builderEvaluationCount = 0
+
+        func countedContent() -> some View {
+            builderEvaluationCount += 1
+            return Text("Modal Content")
+        }
+
+        router.showModal {
+            countedContent()
+            Button("Continue") {}
+        }
+
+        #expect(builderEvaluationCount == 1)
+    }
+
     @Test("dismissModal is callable")
     func dismissModal() {
         let router: any Router = RouterView { _ in Text("Root") }

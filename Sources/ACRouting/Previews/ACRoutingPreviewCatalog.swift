@@ -566,27 +566,22 @@ private struct OverlayAndAlertsDemoRoot: View {
                     Button("Close", role: .cancel) {
                         router.dismissAlert()
                     }
-                    .any()
                 }
             }
             .buttonStyle(.borderedProminent)
 
             Button("Show Confirmation Dialog") {
-                router.showAlert(
-                    .confirmationDialog,
+                router.showConfirmationDialog(
                     title: "Archive Draft Flow",
-                    subtitle: "Confirmation dialogs are also modeled through the router."
+                    message: "Confirmation dialogs are also modeled through the router."
                 ) {
-                    Group {
-                        Button("Archive") {
-                            router.dismissAlert()
-                        }
-
-                        Button("Cancel", role: .cancel) {
-                            router.dismissAlert()
-                        }
+                    Button("Archive") {
+                        router.dismissAlert()
                     }
-                    .any()
+
+                    Button("Cancel", role: .cancel) {
+                        router.dismissAlert()
+                    }
                 }
             }
             .buttonStyle(.bordered)
