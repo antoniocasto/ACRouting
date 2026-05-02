@@ -251,6 +251,7 @@ private struct BuilderDrivenFeatureRouterAdapter: BuilderDrivenFeatureRouting {
 
 private enum DeepLinkTestRoute: String, Codable, Hashable, Sendable {
     case detail
+    case settings
     case unsupported
 }
 
@@ -258,13 +259,15 @@ private struct DeepLinkTestResolver: RoutedNavigationIntentResolving {
     private(set) var supportedRoutes: Set<DeepLinkTestRoute> = [.detail]
 
     func canResolve(_ payload: DeepLinkTestRoute) -> Bool {
-        supportedRoutes.contains(payload)
+        supportedRoutes.contains(payload) || payload == .settings
     }
 
     func presentation(for payload: DeepLinkTestRoute) -> SegueOption {
         switch payload {
         case .detail:
             .fullScreenCover
+        case .settings:
+            .sheet
         case .unsupported:
             .sheet
         }
@@ -565,6 +568,19 @@ struct BuilderFirstRouterAdapterTests {
         #expect(router.screenCalls[0].option == .fullScreenCover)
 
         let _: AnyView = router.screenCalls[0].destination(MockRouter())
+    }
+
+    @Test("Supported routed intent can use sheet presentation")
+    func supportedRoutedIntentCanUseSheetPresentation() {
+        let router = DestinationCapturingRouter()
+        let resolver = DeepLinkTestResolver()
+        let intent = RoutedNavigationIntent(payload: DeepLinkTestRoute.settings)
+
+        let result = router.showScreen(intent, using: resolver)
+
+        #expect(result == .presented(intent))
+        #expect(router.screenCalls.count == 1)
+        #expect(router.screenCalls[0].option == .sheet)
     }
 
     @Test("Unsupported routed intent does not present")

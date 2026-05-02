@@ -20,6 +20,9 @@ This roadmap is intended to be the default planning source for future Codex chat
 - Environment injection and explicit router passing are both supported patterns.
 - Multiple independent `RouterView` contexts, such as tab roots, are first-class supported integration patterns.
 - Any future data-driven or typed navigation inputs must carry serializable navigation intent only, never concrete `View` types or module dependencies.
+- CI must validate the normal contribution path, which means pull requests targeting `develop` as well as protected release branches.
+- Restoration must not ship as a broad feature until its persisted payload envelope, schema versioning, and resolver policy versioning are documented.
+- Maintainer-only hosted documentation setup notes must not be exposed from the public repository; `docs/HostedDocumentation.md` should be removed rather than only unlinked.
 
 ## Architectural Contract
 
@@ -48,7 +51,7 @@ This roadmap is intended to be the default planning source for future Codex chat
 - Regression coverage now includes builder-assembled push, sheet, full-screen, overlay, and independent router-context stack isolation.
 - Deep-link input modeling now stores app-owned serializable payloads and lets app-owned resolvers choose presentation style plus destination assembly.
 
-### Current supported behavior in `v1.5.0`
+### Current supported behavior after `v1.5.2`
 
 - Root flow with push navigation.
 - One routed `.sheet` flow with its own local push stack.
@@ -60,11 +63,15 @@ This roadmap is intended to be the default planning source for future Codex chat
 - Serializable routed navigation intent payloads resolved through app-owned resolvers.
 - Resolver-selected presentation styles for supported typed navigation payloads.
 
-### Current gaps to address after `v1.5.0`
+### Current gaps to address after `v1.5.2`
 
 - Builder-first regression coverage is much stronger than before, but follow-up tests should continue locking down any small adapter or multi-context edge cases discovered during use.
 - Missing-router diagnostics are actionable, but they should stay preview-safe and avoid becoming noisy.
-- `AnyView` and `AnyDestination` still limit future state serialization and reconstruction work, but any cleanup in this area must preserve builder-owned assembly.
+- CI needs operational hardening so PRs toward `develop` receive the same test signal expected by the repository workflow, and the runner should not depend on uninstalled formatting tools such as `xcpretty`.
+- The current automated suite protects core state behavior well, but it still needs thin runtime-level checks for actual SwiftUI presentation wiring on the supported platforms.
+- `AnyView`, `AnyDestination`, and `View.any()` still limit future state serialization and reconstruction work, but any cleanup in this area must preserve builder-owned assembly.
+- Alert actions and overlay builders are usable, but their `AnyView` and non-`@ViewBuilder` ergonomics should be improved additively before a breaking cleanup is considered.
+- `showModal` intentionally differs from routed presentations because it evaluates and stores overlay content in the current router context; docs and tests should make that timing explicit.
 - Remaining reconstruction and restoration gaps are persisted payload compatibility, multi-entry deep-link stack reconstruction, and cross-context restoration across multiple `RouterView` roots.
 
 ## Priorities
@@ -73,61 +80,84 @@ This roadmap is intended to be the default planning source for future Codex chat
 
 Priority: High
 
-- Make builder-owned screen assembly an explicit product decision in the roadmap, README, and examples.
-- Publish guidance for app-owned router adapters that translate feature intents into builder calls plus `ACRouting` commands.
+- Keep builder-owned screen assembly explicit in the roadmap, README, DocC, and examples.
+- Maintain guidance for app-owned router adapters that translate feature intents into builder calls plus `ACRouting` commands.
 - Keep the closure-based presentation APIs first-class throughout `v1.x`.
-- Clarify support for multiple independent `RouterView` contexts and their ownership boundaries.
+- Continue clarifying support for multiple independent `RouterView` contexts and their ownership boundaries as new examples or edge cases appear.
 
 Why it matters:
 This is how real consumers already use the package. The roadmap and docs should match that reality before more feature work is layered on top.
 
-### 2. Expand Behavior-Level Test Coverage
+### 2. Stabilize CI and Platform Verification
 
 Priority: High
 
-- Add tests that verify builder-assembled push, sheet, full-screen, overlay, and ancestor modal dismissal flows.
-- Add coverage for multiple independent `RouterView` contexts such as tab roots.
-- Cover current limits explicitly so unsupported behavior is documented and protected from accidental drift.
+- Run CI for pull requests targeting `develop`, because that is the normal PR base for repository work.
+- Keep branch-protection job names stable while aligning workflow triggers with the actual release process.
+- Replace, install, or avoid formatter dependencies that are not guaranteed on GitHub-hosted macOS runners.
+- Add at least one iOS simulator test lane so non-macOS presentation branches, especially `.fullScreenCover`, are executed in automation.
+- Keep macOS execution because it validates the documented sheet-backed full-screen fallback.
+
+Why it matters:
+A routing package can look stable locally while the normal PR path has no reliable CI signal. Before restoration or larger API work, the feedback loop must be trustworthy.
+
+### 3. Expand Behavior-Level Test Coverage
+
+Priority: High
+
+- Maintain tests that verify builder-assembled push, sheet, full-screen, overlay, and ancestor modal dismissal flows.
+- Extend coverage for multiple independent `RouterView` contexts when new tab-root or feature-scope edge cases are discovered.
+- Keep current limits explicitly covered so unsupported behavior is documented and protected from accidental drift.
+- Keep binding/helper tests for fast state verification, but add thin runtime-level coverage for real `NavigationStack`, `.sheet`, `.fullScreenCover`, alert, and overlay wiring where feasible.
+- Clarify and test the intended `showModal` builder timing so spy-router behavior and concrete `RouterView` behavior do not drift unnoticed.
+- Remove or avoid fragile low-value assertions, such as relying on distinct `hashValue` values, when identity or equality already prove the intended behavior.
 - Require each feature-bearing release to ship with behavior tests.
 
 Why it matters:
 Navigation regressions are behavioral. Tests should protect the real integration patterns package consumers rely on, not only isolated core mechanics.
 
-### 3. Improve Public API Ergonomics and Diagnostics
+### 4. Improve Public API Ergonomics and Diagnostics
 
 Priority: High
 
 - Refine public APIs toward fluent Swift call sites, role-based labels, and concise documentation comments where additive improvements are useful.
+- Add ergonomic overloads where they reduce type-erasure friction without changing existing behavior, especially `showModal` builder call sites and alert or confirmation actions.
+- Treat `AnyDestination` and `View.any()` as low-level supporting API in documentation until a `v2.0.0` cleanup can de-emphasize or replace them safely.
+- Keep `showScreen` and `SegueOption` source-stable through `v1.x`; any naming cleanup should be additive first and breaking only in `v2.0.0`.
 - Keep both router access styles first-class: environment injection and explicit passing.
-- Add preview-safe diagnostics and clearer guidance for missing router injection.
+- Maintain preview-safe diagnostics and clearer guidance for missing router injection.
 - Keep the local preview catalog aligned with current behavior rather than aspirational flows.
 
 Why it matters:
 For a public package, ergonomics and diagnostics are part of the product surface. Better guidance reduces integration mistakes without forcing new architecture.
 
-### 4. Define Deep-Link and Restoration Boundaries Around App-Owned Builders
+### 5. Define Deep-Link and Restoration Boundaries Around App-Owned Builders
 
-Priority: Medium
+Priority: High
 
-- Design additive APIs that can accept serializable navigation intent or payload values without moving screen assembly into `ACRouting`.
-- Define how app-owned builders or resolvers recreate screens when those payloads need to be rendered.
-- Document failure behavior for unsupported, partial, or invalid inputs.
+- Keep the payload-only routed intent API additive and avoid moving screen assembly into `ACRouting`.
+- Extend the app-owned builder or resolver handoff only where it helps supported deep-link or restoration flows.
+- Keep failure behavior for unsupported, partial, or invalid inputs documented and regression-covered.
+- Before shipping restoration APIs, publish a short design note that defines the persisted envelope, payload schema versioning, resolver policy versioning, unsupported payload behavior, and ownership of multiple `RouterView` roots.
+- Scope the first restoration implementation to a single routed context unless the envelope model has already proven that cross-context restoration can stay deterministic.
+- Defer cross-tab, multi-root, and multi-entry stack reconstruction until single-context restoration has behavior tests and compatibility rules.
 
 Why it matters:
 Deep links and restoration are still valuable goals, but they must fit the builder-first contract instead of bypassing it.
 
-### 5. Reduce View-Erased Internals Only When It Helps Deterministic State
+### 6. Reduce View-Erased Internals Only When It Helps Deterministic State
 
 Priority: Medium
 
 - Prefer more data-driven internal state where it improves testing, restoration readiness, or deterministic behavior.
 - Avoid turning internal cleanup into a public requirement for package-owned route registries or view factories.
 - Keep current closure-based APIs supported while internals evolve.
+- Do not prioritize type purity over the current user-facing value: deterministic routing with app-owned assembly.
 
 Why it matters:
 Internal cleanup still matters, but not at the cost of architectural boundaries that package consumers depend on.
 
-### 6. Keep Platform Metadata, SemVer Guidance, and Examples Aligned
+### 7. Keep Platform Metadata, SemVer Guidance, and Examples Aligned
 
 Priority: Continuous
 
@@ -150,7 +180,8 @@ The following milestones should not be treated as "implement immediately" items 
 
 - `v1.4.3`: builder-first architecture sync, adapter examples, diagnostics, and regression coverage for real-world integration patterns.
 - `v1.5.0`: deep-link input modeling, builder or resolver handoff, and supported failure behavior.
-- `v1.6.0`: restoration payload format, compatibility rules, and reconstruction boundaries across supported router contexts.
+- `v1.5.2`: CI reliability, runtime-test hardening, and documentation of current overlay or API ergonomics limits before the next feature family.
+- `v1.6.0`: restoration payload envelope, compatibility rules, and a narrowly scoped single-context reconstruction boundary.
 - `v1.7.0`: optional navigation-intent helpers for app-owned routers, only if they provide value without moving assembly into the package.
 - `v2.0.0`: migration strategy, naming cleanup, and legacy API de-emphasis timing.
 
@@ -271,18 +302,64 @@ Deep-link entry points are valuable, but only if they respect the existing build
 Why this version:
 Input-driven navigation is behavior-heavy and benefits from a dedicated stabilization pass before restoration work is added.
 
+### v1.5.2
+
+- Operational hardening patch before restoration work.
+- Align CI triggers with the repository's PR flow toward `develop`.
+- Replace, install, or remove reliance on `xcpretty` in GitHub Actions.
+- Add an iOS simulator test lane or equivalent automation that executes non-macOS presentation branches.
+- Remove `docs/HostedDocumentation.md` from the repository and stop exposing maintainer-only hosting setup notes from public docs.
+- Clarify `showModal` overlay builder timing in docs and tests.
+- Trim fragile or duplicated tests where they do not protect meaningful behavior.
+- Do not introduce a new routing feature family in this release.
+
+Already implemented:
+
+- CI now runs for pull requests and pushes targeting both `develop` and `main`.
+- The CI workflow no longer depends on `xcpretty`.
+- The automated suite now runs through an iOS simulator lane as well as macOS.
+- `docs/HostedDocumentation.md` was removed from the repository, and public docs no longer link to maintainer-only hosting setup notes.
+- `showModal` overlay builder timing is documented and covered by tests for the concrete `RouterView`.
+- Fragile hash-value distinctness coverage was removed in favor of identity/equality assertions.
+
+Why this version:
+The package should have reliable automation and sharper behavioral tests before `v1.6.0` starts persisting or rebuilding navigation state.
+
+### v1.5.3
+
+- Public API ergonomics patch.
+- Add additive `showModal` builder overloads only if they reduce call-site friction without changing overlay timing or routed-context ownership.
+- Improve alert and confirmation action ergonomics without removing the existing `AnyView`-based button APIs.
+- Document `AnyView`, `AnyDestination`, and `View.any()` as low-level compatibility tools rather than preferred app-facing patterns.
+- Keep all improvements source-compatible and avoid introducing package-owned route registries or typed routing requirements.
+- Do not include restoration, persisted payload envelopes, or multi-entry stack reconstruction in this patch.
+
+Needs deeper design before implementation:
+
+- whether `showModal` should gain an explicit `@ViewBuilder` overload, a role-labeled content closure, or both
+- how to improve alert action call sites while preserving the existing `@Sendable () -> AnyView` contract for external conformers
+- whether any new ergonomic overload should live only on `Router` protocol extensions to avoid widening conformer requirements
+- which examples should be updated so ergonomics guidance remains builder-first and does not imply package-owned screen assembly
+
+Why this version:
+The ergonomics work is valuable, but it should stay separate from `v1.5.2` CI hardening so the release before restoration remains operationally focused.
+
 ### v1.6.0
 
-- Restoration release.
-- Persist and rebuild supported navigation state using app-owned builders or resolvers.
-- Add round-trip restoration tests for supported flows.
+- Restoration foundation release.
+- Publish the restoration design note before implementation, including persisted envelope, payload schema version, resolver policy version, and unsupported payload behavior.
+- Persist and rebuild a narrowly scoped single-router-context navigation state using app-owned builders or resolvers.
+- Add round-trip restoration tests for the supported single-context flows.
 - Keep restoration scoped to navigation state, not arbitrary view reconstruction.
+- Defer cross-tab, multi-root, and broad multi-entry stack reconstruction unless the design note proves they can remain deterministic without package-owned screen assembly.
 
 Needs deeper design before implementation:
 
 - what restoration payload format becomes the long-term compatibility boundary
 - how versioning and backward compatibility are handled for saved navigation state
 - how restoration behaves across multiple `RouterView` contexts such as tab roots
+- how apps version payload schema and resolver behavior when presentation rules are not serialized in `RoutedNavigationIntent`
+- whether restoration should use an app-owned envelope that records payload type, payload schema version, and resolver policy version before handing payloads back to `ACRouting`
 
 Why this version:
 Restoration is only worth shipping once deep-link input and builder handoff rules are stable enough to serialize and rebuild safely.
@@ -339,18 +416,23 @@ Breaking changes should happen only after the package has already proven an addi
 
 - `v1.4.0` is the first release allowed to add new public navigation-control APIs.
 - The current closure-based builder API remains first-class throughout `v1.x`.
+- New `Router` protocol requirements in `v1.x` should keep source compatibility through default implementations.
 - Builders own screen assembly; `ACRouting` owns navigation state and transition behavior.
-- Future data-driven APIs, if added, must hand off rendering to app-owned builders or resolvers and must carry only serializable navigation intent.
+- Future data-driven APIs beyond current intent modeling must hand off rendering to app-owned builders or resolvers and must carry only serializable navigation intent.
 - The package must not require a package-owned global route-to-view registry in the core.
 - Multiple independent `RouterView` contexts remain supported and should stay documented as such.
 - No roadmap item before `v2.0.0` may require removing current APIs.
 - Future presentation state can become more data-driven internally, but public integration should remain builder-friendly.
+- Public type-erasure surfaces such as `AnyDestination`, `View.any()`, and alert `AnyView` actions should be treated as compatibility debt, not as patterns to expand.
+- Additive ergonomic overloads are allowed when they reduce type-erasure friction without changing existing call sites.
 
 ## Test Strategy
 
 - Each feature-bearing release should ship with its own behavior tests.
 - Do not defer test coverage for a new integration surface to a later milestone.
 - Prefer parity between documented integration patterns and core behavior over parity with hypothetical future abstractions.
+- CI must run on the branches that actually receive work, including PRs targeting `develop`.
+- CI should exercise both macOS behavior and at least one iOS simulator path for platform-conditional presentation code.
 
 Minimum scenarios to cover explicitly:
 
@@ -363,9 +445,13 @@ Minimum scenarios to cover explicitly:
 - Alert and confirmation dialog lifecycle.
 - Missing-router diagnostics in previews or isolated tests.
 - macOS full-screen fallback behavior.
+- iOS full-screen presentation behavior.
+- Runtime-level presentation wiring for push, routed modal, alert, and overlay behavior where SwiftUI automation makes this practical.
+- `showModal` overlay builder timing and dismissal behavior.
 - `RoutedNavigationIntent` Codable round-trips and resolver-selected presentation behavior for deep-link input.
 - Deep-link stack reconstruction round-trips once reconstruction APIs exist.
-- Restoration round-trips once restoration exists.
+- Single-context restoration round-trips once restoration exists.
+- Cross-context restoration round-trips only after the single-context envelope and compatibility rules are proven.
 
 ## Non-Goals for Now
 
@@ -377,3 +463,5 @@ Minimum scenarios to cover explicitly:
 - UIKit bridging unless a concrete integration need appears.
 - Rebuilding the package around a global app store before the routing core is deterministic.
 - Supporting legacy Apple platform versions below the current floor.
+- Shipping broad restoration, cross-tab restoration, or multi-root reconstruction before a persisted compatibility envelope is defined.
+- Expanding public type-erasure requirements when additive ergonomic overloads can hide that detail from consumers.

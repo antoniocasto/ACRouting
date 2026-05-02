@@ -22,7 +22,7 @@ private struct ACRoutingPreviewCatalogHome: View {
 
                 PreviewExampleCard(
                     title: "Current Semantics",
-                    summary: "These previews intentionally document the `v1.4.4` behavior surface as it exists today, including the current limits and integration guidance."
+                    summary: "These previews intentionally document the current behavior surface, including the current limits and integration guidance."
                 ) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("• `dismissScreen()` pops a pushed screen, but dismisses a sheet or full-screen cover only when you are at that modal flow root.")
@@ -35,13 +35,13 @@ private struct ACRoutingPreviewCatalogHome: View {
                 }
 
                 PreviewExampleCard(
-                    title: "v1.4.4 Layering Limits",
-                    summary: "The catalog shows only the flow shapes that are documented and regression-covered in `v1.4.4`."
+                    title: "Current Layering Limits",
+                    summary: "The catalog shows only the flow shapes that are documented and regression-covered in the current release."
                 ) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("• One routed `.sheet` or one routed `.fullScreenCover` can own its own local push stack.")
                         Text("• `showModal` may appear inside the current router context, including root, pushed, sheet-root, or full-screen-root screens.")
-                        Text("• The catalog does not demonstrate nested routed sheet/full-screen containers because those combinations are not first-class in `v1.4.4`.")
+                        Text("• The catalog does not demonstrate nested routed sheet/full-screen containers because those combinations are not first-class in the current release.")
                     }
                     .font(.footnote)
                     .foregroundStyle(.secondary)
@@ -73,7 +73,7 @@ private struct ACRoutingPreviewCatalogHome: View {
 
                 PreviewExampleCard(
                     title: "Modal Flows",
-                    summary: "Shows the first-class routed modal containers in `v1.4.4`: `.sheet` and `.fullScreenCover`, each with its own local navigation stack."
+                    summary: "Shows the first-class routed modal containers in the current release: `.sheet` and `.fullScreenCover`, each with its own local navigation stack."
                 ) {
                     Button("Open Modal Demo") {
                         router.showScreen(.sheet) { _ in
@@ -118,7 +118,7 @@ private struct ACRoutingPreviewCatalogHome: View {
                 .font(.body)
                 .foregroundStyle(.secondary)
 
-            Text("If a behavior looks constrained, that is intentional: the catalog prefers the real `v1.4.4` capabilities over aspirational examples.")
+            Text("If a behavior looks constrained, that is intentional: the catalog prefers real documented capabilities over aspirational examples.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
@@ -411,7 +411,7 @@ private struct ModalFlowsDemoRoot: View {
     var body: some View {
         DemoScreen(
             title: "Modal Flows",
-            summary: "Both buttons below start a supported routed modal flow in `v1.4.4`. Inside those flows you can still push more screens, but the push stack stays local to that modal flow."
+            summary: "Both buttons below start a supported routed modal flow in the current release. Inside those flows you can still push more screens, but the push stack stays local to that modal flow."
         ) {
             Button("Open Routed Sheet") {
                 router.showScreen(.sheet) { _ in
@@ -642,7 +642,7 @@ private struct ComplexCheckoutDemoRoot: View {
     var body: some View {
         DemoScreen(
             title: "Complex Checkout",
-            summary: "This demo mixes only the combinations documented for `v1.4.4`: push navigation, one routed sheet with its own local push stack, a lightweight overlay on the current context, and a confirmation full-screen cover."
+            summary: "This demo mixes only the currently documented combinations: push navigation, one routed sheet with its own local push stack, a lightweight overlay on the current context, and a confirmation full-screen cover."
         ) {
             Button("Inspect Featured Product") {
                 router.showScreen(.push) { _ in

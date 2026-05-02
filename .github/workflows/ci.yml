@@ -2,9 +2,9 @@ name: CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [develop, main]
   push:
-    branches: [develop]
+    branches: [develop, main]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -47,22 +47,30 @@ jobs:
           xcodebuild build-for-testing \
             -scheme ACRouting \
             -destination "generic/platform=iOS Simulator" \
-            -clonedSourcePackagesDirPath .build \
-            | xcpretty --color && exit ${PIPESTATUS[0]}
+            -clonedSourcePackagesDirPath .build
 
-      - name: Test
+      - name: Test iOS
+        run: |
+          xcodebuild test \
+            -scheme ACRouting \
+            -destination "platform=iOS Simulator,OS=${{ matrix.ios }},name=iPhone 17 Pro" \
+            -clonedSourcePackagesDirPath .build \
+            -resultBundlePath TestResults-iOS.xcresult
+
+      - name: Test macOS
         run: |
           xcodebuild test \
             -scheme ACRouting \
             -destination "platform=macOS" \
             -clonedSourcePackagesDirPath .build \
-            -resultBundlePath TestResults.xcresult \
-            | xcpretty --color && exit ${PIPESTATUS[0]}
+            -resultBundlePath TestResults-macOS.xcresult
 
       - name: Upload test results
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: TestResults-Xcode${{ matrix.xcode }}-iOS${{ matrix.ios }}
-          path: TestResults.xcresult
+          path: |
+            TestResults-iOS.xcresult
+            TestResults-macOS.xcresult
           retention-days: 7

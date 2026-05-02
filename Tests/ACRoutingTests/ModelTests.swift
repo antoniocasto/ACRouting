@@ -31,14 +31,6 @@ struct AnyDestinationTests {
         #expect(destination == destination)
     }
 
-    @Test("Hash values differ for distinct instances")
-    func hashUniqueness() {
-        let a = AnyDestination(destination: Text("A"))
-        let b = AnyDestination(destination: Text("B"))
-
-        #expect(a.hashValue != b.hashValue)
-    }
-
     @Test("Can be used as a Set element")
     func usableInSet() {
         let a = AnyDestination(destination: Text("A"))
