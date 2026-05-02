@@ -306,6 +306,22 @@ struct RouterProtocolDefaultsTests {
         #expect(spy.showAlertCalls[0].hasButtons == true)
     }
 
+    @Test("showAlert action-builder overload erases actions and forwards")
+    func showAlertActionBuilderOverloadForwards() {
+        let spy = SpyRouter()
+
+        spy.showAlert(.alert, title: "Delete", subtitle: "Cannot be undone") {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) {}
+        }
+
+        #expect(spy.showAlertCalls.count == 1)
+        #expect(spy.showAlertCalls[0].option == .alert)
+        #expect(spy.showAlertCalls[0].title == "Delete")
+        #expect(spy.showAlertCalls[0].subtitle == "Cannot be undone")
+        #expect(spy.showAlertCalls[0].hasButtons == true)
+    }
+
     @Test("showErrorAlert can be called with error only")
     func showErrorAlertMinimalParams() {
         let spy = SpyRouter()
@@ -315,6 +331,36 @@ struct RouterProtocolDefaultsTests {
         #expect(spy.showErrorAlertCalls.count == 1)
         #expect(spy.showErrorAlertCalls[0].errorDescription == "Oops")
         #expect(spy.showErrorAlertCalls[0].hasButtons == false)
+    }
+
+    @Test("showErrorAlert action-builder overload erases actions and forwards")
+    func showErrorAlertActionBuilderOverloadForwards() {
+        let spy = SpyRouter()
+        let error = NSError(domain: "test", code: 1, userInfo: [NSLocalizedDescriptionKey: "Oops"])
+
+        spy.showErrorAlert(error: error) {
+            Button("OK", role: .cancel) {}
+        }
+
+        #expect(spy.showErrorAlertCalls.count == 1)
+        #expect(spy.showErrorAlertCalls[0].errorDescription == "Oops")
+        #expect(spy.showErrorAlertCalls[0].hasButtons == true)
+    }
+
+    @Test("showConfirmationDialog forwards as confirmation dialog")
+    func showConfirmationDialogForwardsAsConfirmationDialog() {
+        let spy = SpyRouter()
+
+        spy.showConfirmationDialog(title: "Archive", message: "Restore later") {
+            Button("Archive") {}
+            Button("Cancel", role: .cancel) {}
+        }
+
+        #expect(spy.showAlertCalls.count == 1)
+        #expect(spy.showAlertCalls[0].option == .confirmationDialog)
+        #expect(spy.showAlertCalls[0].title == "Archive")
+        #expect(spy.showAlertCalls[0].subtitle == "Restore later")
+        #expect(spy.showAlertCalls[0].hasButtons == true)
     }
 
     @Test("showModal can be called with screen only (all defaults)")
@@ -330,6 +376,36 @@ struct RouterProtocolDefaultsTests {
     @Test("showModal can be called with custom parameters")
     func showModalCustomParams() {
         let spy = SpyRouter()
+        spy.showModal(
+            backgroundColor: .red,
+            backgroundTapDismissesModal: false
+        ) {
+            Text("Modal")
+        }
+
+        #expect(spy.showModalCalls.count == 1)
+        #expect(spy.showModalCalls[0].backgroundColor == .red)
+        #expect(spy.showModalCalls[0].backgroundTapDismissesModal == false)
+    }
+
+    @Test("showModal view-builder overload forwards defaults")
+    func showModalViewBuilderOverloadForwardsDefaults() {
+        let spy = SpyRouter()
+
+        spy.showModal {
+            Text("Title")
+            Button("Continue") {}
+        }
+
+        #expect(spy.showModalCalls.count == 1)
+        #expect(spy.showModalCalls[0].backgroundColor == Color.black.opacity(0.6))
+        #expect(spy.showModalCalls[0].backgroundTapDismissesModal == true)
+    }
+
+    @Test("showModal view-builder overload forwards custom configuration")
+    func showModalViewBuilderOverloadForwardsCustomConfiguration() {
+        let spy = SpyRouter()
+
         spy.showModal(
             backgroundColor: .red,
             backgroundTapDismissesModal: false
