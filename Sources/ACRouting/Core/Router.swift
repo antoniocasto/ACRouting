@@ -7,6 +7,10 @@
 
 import SwiftUI
 
+private struct SendableErasedView: @unchecked Sendable {
+    let view: AnyView
+}
+
 /// Navigation commands exposed to routed feature views.
 ///
 /// The package keeps SwiftUI navigation state inside `RouterView`.
@@ -126,6 +130,51 @@ public extension Router {
     func showErrorAlert(error: any Error, buttons: (@Sendable () -> AnyView)? = nil) {
         showErrorAlert(error: error, buttons: buttons)
     }
+
+    /// Presents an alert or confirmation dialog with SwiftUI action content.
+    ///
+    /// This overload keeps application call sites typed while forwarding through the
+    /// source-compatible `AnyView` action storage used by the underlying router requirement.
+    func showAlert<Actions: View>(
+        _ option: AlertType,
+        title: String,
+        subtitle: String? = nil,
+        @ViewBuilder actions: @escaping @Sendable () -> Actions
+    ) {
+        let erasedActions = SendableErasedView(view: AnyView(actions()))
+        showAlert(option, title: title, subtitle: subtitle, buttons: {
+            erasedActions.view
+        })
+    }
+
+    /// Presents an error alert with SwiftUI action content.
+    ///
+    /// This overload avoids manual `AnyView` wrapping at the call site while preserving the
+    /// existing `Router` protocol requirement for external conformers.
+    func showErrorAlert<Actions: View>(
+        error: any Error,
+        @ViewBuilder actions: @escaping @Sendable () -> Actions
+    ) {
+        let erasedActions = SendableErasedView(view: AnyView(actions()))
+        showErrorAlert(error: error, buttons: {
+            erasedActions.view
+        })
+    }
+
+    /// Presents a confirmation dialog with SwiftUI action content.
+    ///
+    /// The convenience uses `message` for public call sites and forwards to the existing
+    /// confirmation-dialog alert presentation behavior.
+    func showConfirmationDialog<Actions: View>(
+        title: String,
+        message: String? = nil,
+        @ViewBuilder actions: @escaping @Sendable () -> Actions
+    ) {
+        let erasedActions = SendableErasedView(view: AnyView(actions()))
+        showAlert(.confirmationDialog, title: title, subtitle: message, buttons: {
+            erasedActions.view
+        })
+    }
     
     /// Presents a lightweight overlay using the package's default presentation configuration.
     ///
@@ -140,7 +189,7 @@ public extension Router {
         backgroundTransition: AnyTransition = .opacity.animation(.smooth),
         animation: Animation = .smooth,
         backgroundTapDismissesModal: Bool = true,
-        screen: @escaping () -> T
+        @ViewBuilder screen: @escaping () -> T
     ) where T : View {
         showModal(
             backgroundColor: backgroundColor,

@@ -13,7 +13,7 @@ out of feature views and centralize transitions behind a single `Router` API.
 
 Documentation:
 - Hosted docs: [acrouting.acasto.dev](https://acrouting.acasto.dev)
-- Current public package release: `1.5.2`
+- Current public package release: `1.5.3`
 
 ## Why ACRouting
 
@@ -49,7 +49,7 @@ Notes:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/antoniocasto/ACRouting.git", from: "1.5.2")
+    .package(url: "https://github.com/antoniocasto/ACRouting.git", from: "1.5.3")
 ],
 targets: [
     .target(
@@ -340,7 +340,7 @@ func destination(for payload: AppRoute, router: any Router) -> some View {
 }
 ```
 
-## Supported Modal Layering in `1.5.2`
+## Supported Modal Layering in `1.5.3`
 
 First-class supported flows:
 - Root flow with push navigation.
@@ -353,7 +353,7 @@ Current limits and out-of-scope combinations:
 - `dismissAncestorModal()` targets only the first ancestor routed `.sheet` or `.fullScreenCover`.
 - `showModal` remains an overlay API; it does not create a routed modal container and is never a dismiss target for `dismissAncestorModal()`.
 - Behavior is documented and regression-covered for one ancestor routed modal at a time.
-- Presenting one routed `.sheet` or `.fullScreenCover` from inside another routed `.sheet` or `.fullScreenCover` is not first-class in `1.5.2`.
+- Presenting one routed `.sheet` or `.fullScreenCover` from inside another routed `.sheet` or `.fullScreenCover` is not first-class in `1.5.3`.
 
 ## Alerts
 
@@ -367,12 +367,20 @@ router.showAlert(
     title: "Delete item",
     subtitle: "This action cannot be undone."
 ) {
-    AnyView(
-        Group {
-            Button("Cancel", role: .cancel) {}
-            Button("Delete", role: .destructive) {}
-        }
-    )
+    Button("Cancel", role: .cancel) {}
+    Button("Delete", role: .destructive) {}
+}
+```
+
+Confirmation dialog shortcut:
+
+```swift
+router.showConfirmationDialog(
+    title: "Archive draft",
+    message: "You can restore it later."
+) {
+    Button("Archive") {}
+    Button("Cancel", role: .cancel) {}
 }
 ```
 
@@ -397,7 +405,8 @@ router.showModal(
     animation: .smooth,
     backgroundTapDismissesModal: true
 ) {
-    MyCustomModalView()
+    Text("Confirm")
+    Button("Continue") {}
 }
 ```
 
@@ -411,6 +420,7 @@ Notes:
 - `showModal` is intended for lightweight overlay UI such as custom alerts, confirmation cards, or loading blockers.
 - Unlike `.sheet` and `.fullScreenCover`, it does not start a new routed flow.
 - The concrete `RouterView` evaluates and stores overlay content in the current routed context when `showModal` is called.
+- The default `showModal` helper accepts `@ViewBuilder` content, so lightweight multi-view overlays do not need manual type erasure.
 
 ## Architecture Notes
 
@@ -431,6 +441,7 @@ Notes:
 - `dismissAncestorModal()` lets a pushed child explicitly close its first ancestor routed modal without changing `dismissScreen()` semantics.
 - Routed `.sheet` and `.fullScreenCover` state now share one internal presentation model, while `showModal` intentionally stays a separate overlay API instead of another routed modal container.
 - If a view reads `@Environment(\.router)` outside `RouterView`, the default fallback is a `MockRouter` that avoids crashes and emits debug guidance explaining how to inject a real router.
+- `AnyDestination`, `View.any()`, and `AnyView` alert actions remain available for source compatibility and internal type erasure, but new application call sites should prefer the typed builder overloads shown above.
 
 ## Internal Preview Catalog
 

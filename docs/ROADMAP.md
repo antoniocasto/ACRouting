@@ -51,7 +51,7 @@ This roadmap is intended to be the default planning source for future Codex chat
 - Regression coverage now includes builder-assembled push, sheet, full-screen, overlay, and independent router-context stack isolation.
 - Deep-link input modeling now stores app-owned serializable payloads and lets app-owned resolvers choose presentation style plus destination assembly.
 
-### Current supported behavior after `v1.5.2`
+### Current supported behavior after `v1.5.3`
 
 - Root flow with push navigation.
 - One routed `.sheet` flow with its own local push stack.
@@ -63,15 +63,15 @@ This roadmap is intended to be the default planning source for future Codex chat
 - Serializable routed navigation intent payloads resolved through app-owned resolvers.
 - Resolver-selected presentation styles for supported typed navigation payloads.
 
-### Current gaps to address after `v1.5.2`
+### Current gaps to address after `v1.5.3`
 
 - Builder-first regression coverage is much stronger than before, but follow-up tests should continue locking down any small adapter or multi-context edge cases discovered during use.
 - Missing-router diagnostics are actionable, but they should stay preview-safe and avoid becoming noisy.
-- CI needs operational hardening so PRs toward `develop` receive the same test signal expected by the repository workflow, and the runner should not depend on uninstalled formatting tools such as `xcpretty`.
-- The current automated suite protects core state behavior well, but it still needs thin runtime-level checks for actual SwiftUI presentation wiring on the supported platforms.
+- CI now matches the repository workflow better, but it should keep evolving as branch protection, runner images, or platform test lanes change.
+- The current automated suite protects core state behavior well, but runtime-level coverage for real SwiftUI presentation wiring can still expand as practical tooling improves.
 - `AnyView`, `AnyDestination`, and `View.any()` still limit future state serialization and reconstruction work, but any cleanup in this area must preserve builder-owned assembly.
-- Alert actions and overlay builders are usable, but their `AnyView` and non-`@ViewBuilder` ergonomics should be improved additively before a breaking cleanup is considered.
-- `showModal` intentionally differs from routed presentations because it evaluates and stores overlay content in the current router context; docs and tests should make that timing explicit.
+- Alert actions and overlay builders now have typed builder conveniences, while the underlying `AnyView` compatibility APIs remain available for existing consumers.
+- `showModal` intentionally differs from routed presentations because it evaluates and stores overlay content in the current router context; future changes should preserve that documented and tested timing.
 - Remaining reconstruction and restoration gaps are persisted payload compatibility, multi-entry deep-link stack reconstruction, and cross-context restoration across multiple `RouterView` roots.
 
 ## Priorities
@@ -328,18 +328,18 @@ The package should have reliable automation and sharper behavioral tests before 
 ### v1.5.3
 
 - Public API ergonomics patch.
-- Add additive `showModal` builder overloads only if they reduce call-site friction without changing overlay timing or routed-context ownership.
+- Add `@ViewBuilder` support to the default `showModal` helper only if it reduces call-site friction without changing overlay timing or routed-context ownership.
 - Improve alert and confirmation action ergonomics without removing the existing `AnyView`-based button APIs.
 - Document `AnyView`, `AnyDestination`, and `View.any()` as low-level compatibility tools rather than preferred app-facing patterns.
 - Keep all improvements source-compatible and avoid introducing package-owned route registries or typed routing requirements.
 - Do not include restoration, persisted payload envelopes, or multi-entry stack reconstruction in this patch.
 
-Needs deeper design before implementation:
+Already implemented:
 
-- whether `showModal` should gain an explicit `@ViewBuilder` overload, a role-labeled content closure, or both
-- how to improve alert action call sites while preserving the existing `@Sendable () -> AnyView` contract for external conformers
-- whether any new ergonomic overload should live only on `Router` protocol extensions to avoid widening conformer requirements
-- which examples should be updated so ergonomics guidance remains builder-first and does not imply package-owned screen assembly
+- The default `Router.showModal` helper now accepts `@ViewBuilder` content without changing overlay timing or routed-context ownership.
+- Additive `Router` extension overloads now support typed alert actions, error-alert actions, and confirmation dialogs while forwarding through the existing `AnyView`-based requirements.
+- README, DocC, and the preview catalog now show ergonomic builder call sites as the preferred public examples.
+- Compatibility guidance now treats `AnyDestination`, `View.any()`, and `AnyView` alert actions as low-level type-erasure surfaces rather than preferred app-facing patterns.
 
 Why this version:
 The ergonomics work is valuable, but it should stay separate from `v1.5.2` CI hardening so the release before restoration remains operationally focused.

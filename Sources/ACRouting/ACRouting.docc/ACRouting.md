@@ -11,7 +11,7 @@ Build predictable SwiftUI navigation flows while keeping screen assembly in your
 
 ## Current Package Version
 
-The currently documented public package release is `1.5.2`.
+The currently documented public package release is `1.5.3`.
 
 The hosted documentation at [acrouting.acasto.dev](https://acrouting.acasto.dev) is published from `main`, while this version marker reflects the latest tagged package release that includes the current public API surface.
 
@@ -49,7 +49,7 @@ For a complete example, see <doc:BuilderFirstIntegration>.
 - ``SegueOption/sheet`` starts a fresh routed modal flow.
 - ``SegueOption/fullScreenCover`` starts a fresh routed full-screen flow on iOS and falls back to a sheet-backed presentation on macOS.
 
-Custom overlays created with ``Router/showModal(backgroundColor:backgroundTransition:animation:backgroundTapDismissesModal:screen:)`` are intentionally separate from routed sheet or full-screen flows. They reuse the current router context instead of creating a new one.
+Custom overlays created with ``Router/showModal(backgroundColor:backgroundTransition:animation:backgroundTapDismissesModal:screen:)`` are intentionally separate from routed sheet or full-screen flows. They reuse the current router context instead of creating a new one, and the default helper accepts typed `@ViewBuilder` content for lightweight custom UI.
 
 For behavior details and supported limits, see <doc:PresentationSemantics>.
 
@@ -75,12 +75,17 @@ For behavior details and supported limits, see <doc:PresentationSemantics>.
 ### Alerts And Overlays
 
 - ``Router/showAlert(_:title:subtitle:buttons:)``
+- ``Router/showAlert(_:title:subtitle:actions:)``
 - ``Router/showErrorAlert(error:buttons:)``
+- ``Router/showErrorAlert(error:actions:)``
+- ``Router/showConfirmationDialog(title:message:actions:)``
 - ``Router/dismissAlert()``
 - ``Router/showModal(backgroundColor:backgroundTransition:animation:backgroundTapDismissesModal:screen:)``
 - ``Router/dismissModal()``
 
 ### Supporting Types
+
+These types remain available as compatibility and type-erasure surfaces. Prefer the typed builder overloads above for new app-facing call sites.
 
 - ``AnyDestination``
 - ``RoutedNavigationIntent``
