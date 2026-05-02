@@ -31,7 +31,7 @@
 - Modify: `Tests/ACRoutingTests/RouterProtocolTests.swift`
 - Modify: `Tests/ACRoutingTests/RouterViewIntegrationTests.swift`
 
-- [ ] **Step 1: Add failing protocol tests for alert action-builder overloads**
+- [x] **Step 1: Add failing protocol tests for alert action-builder overloads**
 
 Add tests near the existing alert tests:
 
@@ -67,7 +67,7 @@ func showErrorAlertActionBuilderOverloadForwards() {
 }
 ```
 
-- [ ] **Step 2: Add failing protocol tests for confirmation and overlay ergonomics**
+- [x] **Step 2: Add failing protocol tests for confirmation and overlay ergonomics**
 
 Add tests near the existing default-parameter tests:
 
@@ -119,7 +119,7 @@ func showModalViewBuilderOverloadForwardsCustomConfiguration() {
 }
 ```
 
-- [ ] **Step 3: Run targeted tests and confirm they fail**
+- [x] **Step 3: Run targeted tests and confirm they fail**
 
 Run:
 
@@ -129,7 +129,7 @@ swift test --filter RouterProtocolTests
 
 Expected: compile fails because `showConfirmationDialog` does not exist yet, the alert action-builder overloads do not exist yet, or multi-view `showModal` content cannot compile through the existing non-`@ViewBuilder` helper.
 
-- [ ] **Step 4: Implement additive overloads in `Router.swift`**
+- [x] **Step 4: Implement additive overloads in `Router.swift`**
 
 Add protocol-extension methods without changing the `Router` requirements:
 
@@ -192,7 +192,7 @@ func showModal<Content: View>(
 }
 ```
 
-- [ ] **Step 5: Add concrete timing test for multi-view `showModal`**
+- [x] **Step 5: Add concrete timing test for multi-view `showModal`**
 
 Add near the existing concrete timing test:
 
@@ -216,7 +216,7 @@ func concreteShowModalViewBuilderOverloadEvaluatesOverlayBuilderImmediately() {
 }
 ```
 
-- [ ] **Step 6: Run targeted tests and commit**
+- [x] **Step 6: Run targeted tests and commit**
 
 Run:
 
@@ -246,7 +246,7 @@ git commit -m "feat: add router ergonomics overloads"
 - Modify: `CHANGELOG.md`
 - Modify: `docs/ROADMAP.md`
 
-- [ ] **Step 1: Update README examples**
+- [x] **Step 1: Update README examples**
 
 In `README.md`, update `1.5.2` references that describe the current supported examples to `1.5.3`.
 
@@ -290,7 +290,7 @@ Add compatibility note:
 `AnyDestination`, `View.any()`, and `AnyView` alert actions remain available for source compatibility and internal type erasure, but new application call sites should prefer the typed builder overloads above.
 ```
 
-- [ ] **Step 2: Update DocC pages**
+- [x] **Step 2: Update DocC pages**
 
 Update `ACRouting.md` version notes and topic lists to include:
 
@@ -315,7 +315,7 @@ Ergonomic alert and overlay builders keep assembly at the app boundary; they do 
 
 Update `DeepLinkInputModeling.md` only where a current-version boundary explicitly says `v1.5.2`.
 
-- [ ] **Step 3: Update preview catalog**
+- [x] **Step 3: Update preview catalog**
 
 In `OverlayAndAlertsDemoRoot`, replace the standard alert button action with:
 
@@ -350,7 +350,7 @@ router.showConfirmationDialog(
 
 Keep the simple existing `showModal { OverlayExampleCard() }` style in the preview catalog because that demo presents a single overlay view. The README and DocC examples will show the same trailing-closure spelling with multi-view overlay content.
 
-- [ ] **Step 4: Update changelog and roadmap**
+- [x] **Step 4: Update changelog and roadmap**
 
 In `CHANGELOG.md`, under `Unreleased`, add:
 
@@ -374,7 +374,7 @@ Already implemented:
 - Compatibility guidance now treats `AnyDestination`, `View.any()`, and `AnyView` alert actions as low-level type-erasure surfaces rather than preferred app-facing patterns.
 ```
 
-- [ ] **Step 5: Parse changed Swift and commit**
+- [x] **Step 5: Parse changed Swift and commit**
 
 Run:
 
@@ -396,7 +396,7 @@ git commit -m "docs: document 1.5.3 ergonomics"
 **Files:**
 - Inspect all changed files.
 
-- [ ] **Step 1: Run full package tests**
+- [x] **Step 1: Run full package tests**
 
 Run:
 
@@ -406,7 +406,7 @@ swift test
 
 Expected: all tests pass.
 
-- [ ] **Step 2: Run package build**
+- [x] **Step 2: Run package build**
 
 Run:
 
@@ -416,7 +416,7 @@ swift build
 
 Expected: build succeeds.
 
-- [ ] **Step 3: Inspect diff for scope**
+- [x] **Step 3: Inspect diff for scope**
 
 Run:
 
@@ -428,7 +428,7 @@ git log --oneline --decorate -5 --no-color
 
 Expected: only planned API, tests, docs, preview catalog, roadmap, changelog, spec, and plan files changed.
 
-- [ ] **Step 4: Commit plan status update after checklist edits**
+- [x] **Step 4: Commit plan status update after checklist edits**
 
 After this plan checklist is updated during execution, commit the plan update:
 
