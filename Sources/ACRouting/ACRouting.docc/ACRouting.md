@@ -66,12 +66,17 @@ For behavior details and supported limits, see <doc:PresentationSemantics>.
 
 - ``Router/showScreen(_:destination:)``
 - ``Router/showScreen(_:using:)``
+- ``Router/showRestorableScreen(_:using:restoration:)``
 - ``Router/restore(_:using:)``
 - ``Router/dismissScreen()``
+- ``Router/dismissRestorableScreen(restoration:)``
 - ``Router/dismissAncestorModal()``
 - ``Router/pop()``
 - ``Router/pop(count:)``
+- ``Router/popRestorableScreen(restoration:)``
+- ``Router/popRestorableScreens(count:restoration:)``
 - ``Router/popToRoot()``
+- ``Router/popRestorableStackToRoot(restoration:)``
 
 ### Alerts And Overlays
 
@@ -92,6 +97,10 @@ These types remain available as compatibility and type-erasure surfaces. Prefer 
 - ``RoutedNavigationIntent``
 - ``RoutedNavigationResolution``
 - ``RoutedNavigationIntentResolving``
+- ``RoutingRestorationStore``
+- ``UserDefaultsRoutingRestorationStore``
+- ``RoutingRestorationController``
+- ``RoutingRestorationStorageError``
 - ``RoutingRestorationState``
 - ``RoutingRestorationEntry``
 - ``RoutingRestorationResult``

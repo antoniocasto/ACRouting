@@ -304,33 +304,49 @@ let result = router.showScreen(intent, using: AppRouteResolver(builder: builder)
 
 Unsupported payloads return `.unsupported(intent)` and do not present a screen. Presentation style selection, URL parsing, payload decoding, and feature-module construction remain app-owned responsibilities.
 
-## Restoration Foundation
+## Ready-To-Use Restoration
 
-`ACRouting` can restore a single routed push stack from app-owned serializable navigation payloads. The package defines the Codable envelope and replay API, while your app chooses where and when to persist it.
+`ACRouting` can persist and restore a single routed push stack from app-owned serializable navigation payloads. The ready-to-use path combines a small storage abstraction, a `UserDefaults` adapter, and a controller that tracks restorable push intents.
 
 ```swift
-let state = RoutingRestorationState(
+let store = UserDefaultsRoutingRestorationStore<AppRoute>(
+    key: "main-route-stack"
+)
+
+let restoration = RoutingRestorationController(
     payloadSchemaVersion: 1,
     resolverPolicyVersion: 1,
     contextID: "main",
-    entries: [
-        RoutingRestorationEntry(intent: RoutedNavigationIntent(payload: AppRoute.detail(id: 42)))
-    ]
+    store: store
 )
 
-let data = try JSONEncoder().encode(state)
-try data.write(to: restorationURL)
+try router.showRestorableScreen(
+    RoutedNavigationIntent(payload: AppRoute.detail(id: 42)),
+    using: AppRouteResolver(builder: builder),
+    restoration: restoration
+)
 ```
 
 When the app is ready to rebuild navigation:
 
 ```swift
-let data = try Data(contentsOf: restorationURL)
-let state = try JSONDecoder().decode(RoutingRestorationState<AppRoute>.self, from: data)
-let result = router.restore(state, using: AppRouteResolver(builder: builder))
+let result = try restoration.restoreLoadedState(
+    on: router,
+    using: AppRouteResolver(builder: builder)
+)
 ```
 
-The first restoration release intentionally restores only `.push` entries inside one `RouterView` context. Storage, payload migration, privacy, encryption, and sync remain app-owned.
+If your app mutates the stack outside `showRestorableScreen`, record the matching restoration mutation explicitly:
+
+```swift
+try router.popRestorableScreen(restoration: restoration)
+try router.dismissRestorableScreen(restoration: restoration)
+try router.popRestorableStackToRoot(restoration: restoration)
+```
+
+For custom persistence, implement `RoutingRestorationStore` and pass that store to `RoutingRestorationController`. The built-in `UserDefaultsRoutingRestorationStore` stores complete `RoutingRestorationState` envelopes as JSON data and throws `RoutingRestorationStorageError` for deterministic encode/decode failure categories.
+
+The first ready-to-use restoration release intentionally tracks only successful `.push` entries inside one `RouterView` context. It does not serialize `RouterView`, `AnyDestination`, closures, sheets, full-screen covers, overlays, alerts, tabs, windows, scenes, or cross-context state.
 
 ### Resolver Shapes
 

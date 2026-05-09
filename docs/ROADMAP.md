@@ -346,14 +346,19 @@ The ergonomics work is valuable, but it should stay separate from `v1.5.2` CI ha
 
 ### v1.6.0
 
-- Restoration foundation release.
+- Ready-to-use restoration release.
 
 Already implemented:
 
 - A design note defines the restoration envelope, payload schema versioning, resolver policy versioning, and unsupported payload behavior.
 - `RoutingRestorationState` stores app-owned intent entries for one routed context.
 - `Router.restore(_:using:)` replays supported `.push` entries through app-owned resolvers and stops on unsupported or non-push entries.
-- Restoration documentation shows app-owned persistence and explicitly defers routed modal, overlay, alert, multi-root, and cross-context restoration.
+- `RoutingRestorationStore` defines the small storage boundary for complete restoration envelopes.
+- `UserDefaultsRoutingRestorationStore` provides JSON-backed local persistence with deterministic storage error categories.
+- `RoutingRestorationController` tracks successful restorable push intents, saves current state, loads stored state, restores through concrete router behavior, and synchronizes after partial restoration.
+- `Router.showRestorableScreen(_:using:restoration:)` combines resolver-based presentation with push-only tracking and persistence.
+- Explicit helper APIs cover pop, dismiss, pop count, and pop-to-root tracking without serializing `RouterView` state.
+- Restoration documentation shows ready-to-use `UserDefaults` setup and explicitly defers routed modal, overlay, alert, multi-root, tab/window, and cross-context restoration.
 
 Why this version:
 Restoration is only worth shipping once deep-link input and builder handoff rules are stable enough to serialize and rebuild safely.

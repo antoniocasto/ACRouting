@@ -453,7 +453,7 @@ git commit -m "feat: add restorable router conveniences"
 - Modify: `docs/ROADMAP.md`
 - Modify: `docs/superpowers/plans/2026-05-09-v1-6-0-ready-to-use-restoration.md`
 
-- [ ] **Step 1: Update docs and examples**
+- [x] **Step 1: Update docs and examples**
 
 Update docs to show:
 
@@ -486,7 +486,7 @@ Also document:
 - explicit mutation tracking through `recordPop`, `recordDismissScreen`, `recordPopToRoot`, and router helper methods;
 - unsupported/deferred scope: no serialization of `RouterView`, `AnyDestination`, closures, sheets, fullScreenCover, overlay, alert, tabs, windows, or cross-context restoration.
 
-- [ ] **Step 2: Verify documentation symbol references**
+- [x] **Step 2: Verify documentation symbol references**
 
 Run:
 
@@ -496,7 +496,7 @@ rg "RoutingRestorationStore|UserDefaultsRoutingRestorationStore|RoutingRestorati
 
 Expected: matches show all new public API in user-facing docs.
 
-- [ ] **Step 3: Commit documentation**
+- [x] **Step 3: Commit documentation**
 
 Run:
 

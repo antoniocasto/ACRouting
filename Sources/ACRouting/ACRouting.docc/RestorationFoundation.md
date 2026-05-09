@@ -1,43 +1,77 @@
-# Restoration Foundation
+# Ready-To-Use Restoration
 
-Persist and restore a single routed push stack from app-owned navigation payloads.
+Persist, track, and restore a single routed push stack from app-owned navigation payloads.
 
 ## Overview
 
-`ACRouting` restoration is built on ``RoutedNavigationIntent``. The package stores no views, builders, presenters, interactors, or type-erased destinations in the restoration envelope. Your app persists serializable route payloads and provides a resolver when restoring.
+`ACRouting` restoration is built on ``RoutedNavigationIntent``. The package stores no views, builders, presenters, interactors, or type-erased destinations in the restoration envelope. Your app provides serializable route payloads and a resolver, while ``RoutingRestorationController`` keeps the current restorable push stack in sync with an app-selected ``RoutingRestorationStore``.
 
-## Create State
+## Configure Storage
 
 ```swift
-let state = RoutingRestorationState(
+let store = UserDefaultsRoutingRestorationStore<AppRoute>(
+    key: "main-route-stack"
+)
+
+let restoration = RoutingRestorationController(
     payloadSchemaVersion: 1,
     resolverPolicyVersion: 1,
     contextID: "main",
-    entries: [
-        RoutingRestorationEntry(intent: RoutedNavigationIntent(payload: AppRoute.detail(id: 42)))
-    ]
+    store: store
 )
 ```
 
-## Persist State
+Use ``UserDefaultsRoutingRestorationStore`` for simple local persistence, or implement ``RoutingRestorationStore`` when an app needs files, SwiftData, Core Data, Keychain, CloudKit, encrypted storage, or server sync.
 
-Choose storage in your app:
+## Present Restorable Pushes
 
 ```swift
-let data = try JSONEncoder().encode(state)
-try data.write(to: restorationURL)
+try router.showRestorableScreen(
+    RoutedNavigationIntent(payload: AppRoute.detail(id: 42)),
+    using: AppRouteResolver(builder: builder),
+    restoration: restoration
+)
 ```
+
+``Router/showRestorableScreen(_:using:restoration:)`` presents through the same resolver-based API as ``Router/showScreen(_:using:)``. It records and saves the intent only after a supported `.push` presentation. Unsupported payloads and non-push presentations are not tracked in the current push-stack restoration scope.
 
 ## Restore State
 
 ```swift
-let data = try Data(contentsOf: restorationURL)
-let state = try JSONDecoder().decode(RoutingRestorationState<AppRoute>.self, from: data)
-let result = router.restore(state, using: AppRouteResolver(builder: builder))
+let result = try restoration.restoreLoadedState(
+    on: router,
+    using: AppRouteResolver(builder: builder)
+)
+```
+
+If restoration stops on an unsupported payload or non-push presentation, the controller synchronizes its tracked stack to only the entries that were actually restored.
+
+## Record Explicit Mutations
+
+When code uses non-restorable router commands directly, record the matching stack change:
+
+```swift
+router.pop()
+try restoration.recordPop()
+
+router.dismissScreen()
+try restoration.recordDismissScreen()
+
+router.popToRoot()
+try restoration.recordPopToRoot()
+```
+
+The router helpers combine both operations when that is more convenient:
+
+```swift
+try router.popRestorableScreen(restoration: restoration)
+try router.popRestorableScreens(count: 2, restoration: restoration)
+try router.dismissRestorableScreen(restoration: restoration)
+try router.popRestorableStackToRoot(restoration: restoration)
 ```
 
 ## Scope
 
 `v1.6.0` restores push entries inside one routed context. If an entry resolves to `.sheet` or `.fullScreenCover`, restoration stops and returns ``RoutingRestorationResult/unsupportedPresentation(_:presentation:restored:)``.
 
-`ACRouting` does not persist storage, export arbitrary `RouterView` state, serialize `AnyDestination`, or restore multi-root tab/window state in this release.
+`ACRouting` does not serialize `RouterView`, `AnyDestination`, closures, sheets, full-screen covers, overlays, alerts, tabs, windows, scenes, or cross-context state in this release.
