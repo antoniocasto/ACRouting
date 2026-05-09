@@ -30,5 +30,5 @@
 - [x] Run `swift build`.
 - [x] Run `swift test`.
 - [x] Commit the naming alignment.
-- [ ] Push `codex/v1-6-0-restoration-foundation`.
-- [ ] Update PR #50 body to use the aligned names.
+- [x] Push `codex/v1-6-0-restoration-foundation`.
+- [x] Update PR #50 body to use the aligned names.
