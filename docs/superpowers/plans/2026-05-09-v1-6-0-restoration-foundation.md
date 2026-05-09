@@ -562,7 +562,7 @@ swift test --filter restore
 
 Expected: the restore tests pass and no non-push entry is presented.
 
-- [ ] **Step 6: Commit restore API**
+- [x] **Step 6: Commit restore API**
 
 ```bash
 git add Sources/ACRouting/Models/RoutingRestorationResult.swift Sources/ACRouting/Core/Router.swift Tests/ACRoutingTests/RouterProtocolTests.swift
@@ -577,7 +577,7 @@ git commit -m "feat: restore routed push stacks
 **Files:**
 - Modify: `Tests/ACRoutingTests/RouterViewIntegrationTests.swift`
 
-- [ ] **Step 1: Add a push-only resolver for concrete RouterView tests**
+- [x] **Step 1: Add a push-only resolver for concrete RouterView tests**
 
 Add this near `RouterViewDeepLinkResolver`:
 
@@ -602,7 +602,7 @@ private struct RouterViewRestorationResolver: RoutedNavigationIntentResolving {
 }
 ```
 
-- [ ] **Step 2: Add concrete stack mutation test**
+- [x] **Step 2: Add concrete stack mutation test**
 
 Add this test inside `RouterViewIntegrationTests`:
 
@@ -632,7 +632,7 @@ func restoreMutatesActiveRouterViewPushStack() {
 }
 ```
 
-- [ ] **Step 3: Run concrete RouterView restoration test**
+- [x] **Step 3: Run concrete RouterView restoration test**
 
 Run:
 
