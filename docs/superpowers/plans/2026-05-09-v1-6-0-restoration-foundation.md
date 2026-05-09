@@ -50,7 +50,7 @@ The first useful, deterministic feature is: app creates or loads a `RoutingResto
 **Files:**
 - Create: `docs/superpowers/specs/2026-05-09-v1-6-0-restoration-foundation-design.md`
 
-- [ ] **Step 1: Write the restoration design note**
+- [x] **Step 1: Write the restoration design note**
 
 Create the file with this content:
 
@@ -138,7 +138,7 @@ let result = router.restore(state, using: AppRouteResolver(builder: builder))
 Restoration is incremental and deterministic. Entries are applied in order. If a payload is unsupported or resolves to a non-push presentation style, the router stops and returns a result that includes the entries restored before the stop.
 ````
 
-- [ ] **Step 2: Review the design note for scope drift**
+- [x] **Step 2: Review the design note for scope drift**
 
 Run:
 
