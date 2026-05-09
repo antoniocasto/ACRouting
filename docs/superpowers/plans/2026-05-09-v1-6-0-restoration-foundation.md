@@ -148,7 +148,7 @@ rg "UserDefaults|SwiftData|Core Data|iCloud|AnyDestination|fullScreenCover|sheet
 
 Expected: matches only describe app-owned storage examples, explicit non-goals, or deferred scope. There must be no sentence assigning storage ownership to `ACRouting`.
 
-- [ ] **Step 3: Commit the design note**
+- [x] **Step 3: Commit the design note**
 
 ```bash
 git add docs/superpowers/specs/2026-05-09-v1-6-0-restoration-foundation-design.md
@@ -164,7 +164,7 @@ git commit -m "docs: add restoration foundation design
 - Create: `Sources/ACRouting/Models/RoutingRestorationState.swift`
 - Modify: `Tests/ACRoutingTests/ModelTests.swift`
 
-- [ ] **Step 1: Add failing model tests**
+- [x] **Step 1: Add failing model tests**
 
 Add this section before `// MARK: - AlertType Tests` in `Tests/ACRoutingTests/ModelTests.swift`:
 
@@ -240,7 +240,7 @@ struct RoutingRestorationStateTests {
 }
 ```
 
-- [ ] **Step 2: Run model tests and verify they fail**
+- [x] **Step 2: Run model tests and verify they fail**
 
 Run:
 
@@ -250,7 +250,7 @@ swift test --filter RoutingRestorationState
 
 Expected: compile fails because `RoutingRestorationState` and `RoutingRestorationEntry` do not exist.
 
-- [ ] **Step 3: Add restoration model implementation**
+- [x] **Step 3: Add restoration model implementation**
 
 Create `Sources/ACRouting/Models/RoutingRestorationState.swift`:
 
@@ -317,7 +317,7 @@ public struct RoutingRestorationEntry<Payload>: Codable, Hashable, Sendable wher
 }
 ```
 
-- [ ] **Step 4: Run model tests and verify they pass**
+- [x] **Step 4: Run model tests and verify they pass**
 
 Run:
 
