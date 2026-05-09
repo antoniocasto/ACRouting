@@ -230,7 +230,7 @@ git commit -m "feat: add restoration storage adapters"
 - Modify: `Tests/ACRoutingTests/RoutingRestorationControllerTests.swift`
 - Modify: `docs/superpowers/plans/2026-05-09-v1-6-0-ready-to-use-restoration.md`
 
-- [ ] **Step 1: Write failing controller tests**
+- [x] **Step 1: Write failing controller tests**
 
 Add tests for:
 
@@ -278,7 +278,7 @@ func restoreLoadedStateSynchronizesAfterNonPushPayload() throws { ... }
 
 Each assertion must check `trackedIntents`, `state`, store saves, and spy-router show-screen calls where applicable.
 
-- [ ] **Step 2: Run RED controller tests**
+- [x] **Step 2: Run RED controller tests**
 
 Run:
 
@@ -288,7 +288,7 @@ swift test --filter RoutingRestorationController
 
 Expected: compile fails because `RoutingRestorationController` does not exist.
 
-- [ ] **Step 3: Implement controller and internal store type erasure**
+- [x] **Step 3: Implement controller and internal store type erasure**
 
 Create `RoutingRestorationController.swift` with:
 
@@ -329,7 +329,7 @@ Implementation notes:
 - `clear()` clears tracked intents and calls store `clear()`.
 - `restoreLoadedState(on:using:)` loads through the store, calls `router.restore`, then replaces `trackedIntents` with `result.restoredResolutions.map(\.intent)` and saves the synchronized state.
 
-- [ ] **Step 4: Run GREEN controller tests**
+- [x] **Step 4: Run GREEN controller tests**
 
 Run:
 
@@ -339,7 +339,7 @@ swift test --filter RoutingRestorationController
 
 Expected: controller tests pass.
 
-- [ ] **Step 5: Commit controller layer**
+- [x] **Step 5: Commit controller layer**
 
 Run:
 
