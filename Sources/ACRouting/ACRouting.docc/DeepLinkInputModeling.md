@@ -107,6 +107,6 @@ This keeps `View` and `Presenter` types out of the deep-link entry point. Builde
 - Presentation style selection belongs to the app-owned resolver.
 - `ACRouting` does not decode URLs directly.
 - `ACRouting` does not own a global route registry.
-- `ACRouting` does not persist or restore navigation state in `v1.5.3`.
-- Future restoration should treat payload schema versions and resolver presentation rules as app-owned compatibility boundaries.
-- Multi-step restoration remains future work after the deep-link payload boundary is stable.
+- `ACRouting` restores only single-context push stacks in `v1.6.0`.
+- Restoration state stores app-owned payloads plus app-owned payload schema and resolver policy versions.
+- Multi-root, cross-context, routed modal, alert, and overlay restoration remain future work.

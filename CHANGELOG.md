@@ -7,6 +7,12 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Added a versioned `RoutingRestorationState` envelope for app-owned navigation payload persistence.
+- Added `Router.restore(_:using:)` for replaying supported single-context push stacks through app-owned resolvers.
+- Documented the `v1.6.0` restoration foundation scope and app-owned persistence boundary.
+
 ## [1.5.3] - 2026-05-02
 
 ### Added

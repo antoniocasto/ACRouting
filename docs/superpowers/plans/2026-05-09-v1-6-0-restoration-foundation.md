@@ -642,7 +642,7 @@ swift test --filter restoreMutatesActiveRouterViewPushStack
 
 Expected: the test passes and proves `restore(_:using:)` works through concrete `RouterView` stack mutation.
 
-- [ ] **Step 4: Commit concrete coverage**
+- [x] **Step 4: Commit concrete coverage**
 
 ```bash
 git add Tests/ACRoutingTests/RouterViewIntegrationTests.swift
@@ -662,7 +662,7 @@ git commit -m "test: cover RouterView restoration stack mutation
 - Modify: `CHANGELOG.md`
 - Modify: `docs/ROADMAP.md`
 
-- [ ] **Step 1: Add DocC restoration article**
+- [x] **Step 1: Add DocC restoration article**
 
 Create `Sources/ACRouting/ACRouting.docc/RestorationFoundation.md`:
 
@@ -712,11 +712,11 @@ let result = router.restore(state, using: AppRouteResolver(builder: builder))
 `ACRouting` does not persist storage, export arbitrary `RouterView` state, serialize `AnyDestination`, or restore multi-root tab/window state in this release.
 ````
 
-- [ ] **Step 2: Add DocC topic link**
+- [x] **Step 2: Add DocC topic link**
 
 In `Sources/ACRouting/ACRouting.docc/ACRouting.md`, add ``RestorationFoundation`` to the topic section beside deep-link input modeling.
 
-- [ ] **Step 3: Update deep-link article boundary wording**
+- [x] **Step 3: Update deep-link article boundary wording**
 
 In `Sources/ACRouting/ACRouting.docc/DeepLinkInputModeling.md`, replace:
 
@@ -734,7 +734,7 @@ with:
 - Multi-root, cross-context, routed modal, alert, and overlay restoration remain future work.
 ```
 
-- [ ] **Step 4: Add README restoration section**
+- [x] **Step 4: Add README restoration section**
 
 Add this section after the deep-link or routing intent documentation in `README.md`:
 
@@ -768,7 +768,7 @@ let result = router.restore(state, using: AppRouteResolver(builder: builder))
 The first restoration release intentionally restores only `.push` entries inside one `RouterView` context. Storage, payload migration, privacy, encryption, and sync remain app-owned.
 ````
 
-- [ ] **Step 5: Update changelog**
+- [x] **Step 5: Update changelog**
 
 Under `## [Unreleased]` in `CHANGELOG.md`, add:
 
@@ -780,7 +780,7 @@ Under `## [Unreleased]` in `CHANGELOG.md`, add:
 - Documented the `v1.6.0` restoration foundation scope and app-owned persistence boundary.
 ```
 
-- [ ] **Step 6: Update roadmap**
+- [x] **Step 6: Update roadmap**
 
 In `docs/ROADMAP.md`, update the `v1.6.0` milestone to say:
 
@@ -793,7 +793,7 @@ Already implemented:
 - Restoration documentation shows app-owned persistence and explicitly defers routed modal, overlay, alert, multi-root, and cross-context restoration.
 ```
 
-- [ ] **Step 7: Run documentation search checks**
+- [x] **Step 7: Run documentation search checks**
 
 Run:
 

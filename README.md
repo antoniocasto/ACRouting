@@ -304,6 +304,34 @@ let result = router.showScreen(intent, using: AppRouteResolver(builder: builder)
 
 Unsupported payloads return `.unsupported(intent)` and do not present a screen. Presentation style selection, URL parsing, payload decoding, and feature-module construction remain app-owned responsibilities.
 
+## Restoration Foundation
+
+`ACRouting` can restore a single routed push stack from app-owned serializable navigation payloads. The package defines the Codable envelope and replay API, while your app chooses where and when to persist it.
+
+```swift
+let state = RoutingRestorationState(
+    payloadSchemaVersion: 1,
+    resolverPolicyVersion: 1,
+    contextID: "main",
+    entries: [
+        RoutingRestorationEntry(intent: RoutedNavigationIntent(payload: AppRoute.detail(id: 42)))
+    ]
+)
+
+let data = try JSONEncoder().encode(state)
+try data.write(to: restorationURL)
+```
+
+When the app is ready to rebuild navigation:
+
+```swift
+let data = try Data(contentsOf: restorationURL)
+let state = try JSONDecoder().decode(RoutingRestorationState<AppRoute>.self, from: data)
+let result = router.restore(state, using: AppRouteResolver(builder: builder))
+```
+
+The first restoration release intentionally restores only `.push` entries inside one `RouterView` context. Storage, payload migration, privacy, encryption, and sync remain app-owned.
+
 ### Resolver Shapes
 
 SwiftUI vanilla can return views directly:

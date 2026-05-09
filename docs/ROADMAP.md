@@ -347,19 +347,13 @@ The ergonomics work is valuable, but it should stay separate from `v1.5.2` CI ha
 ### v1.6.0
 
 - Restoration foundation release.
-- Publish the restoration design note before implementation, including persisted envelope, payload schema version, resolver policy version, and unsupported payload behavior.
-- Persist and rebuild a narrowly scoped single-router-context navigation state using app-owned builders or resolvers.
-- Add round-trip restoration tests for the supported single-context flows.
-- Keep restoration scoped to navigation state, not arbitrary view reconstruction.
-- Defer cross-tab, multi-root, and broad multi-entry stack reconstruction unless the design note proves they can remain deterministic without package-owned screen assembly.
 
-Needs deeper design before implementation:
+Already implemented:
 
-- what restoration payload format becomes the long-term compatibility boundary
-- how versioning and backward compatibility are handled for saved navigation state
-- how restoration behaves across multiple `RouterView` contexts such as tab roots
-- how apps version payload schema and resolver behavior when presentation rules are not serialized in `RoutedNavigationIntent`
-- whether restoration should use an app-owned envelope that records payload type, payload schema version, and resolver policy version before handing payloads back to `ACRouting`
+- A design note defines the restoration envelope, payload schema versioning, resolver policy versioning, and unsupported payload behavior.
+- `RoutingRestorationState` stores app-owned intent entries for one routed context.
+- `Router.restore(_:using:)` replays supported `.push` entries through app-owned resolvers and stops on unsupported or non-push entries.
+- Restoration documentation shows app-owned persistence and explicitly defers routed modal, overlay, alert, multi-root, and cross-context restoration.
 
 Why this version:
 Restoration is only worth shipping once deep-link input and builder handoff rules are stable enough to serialize and rebuild safely.

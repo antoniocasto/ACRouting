@@ -66,6 +66,7 @@ For behavior details and supported limits, see <doc:PresentationSemantics>.
 
 - ``Router/showScreen(_:destination:)``
 - ``Router/showScreen(_:using:)``
+- ``Router/restore(_:using:)``
 - ``Router/dismissScreen()``
 - ``Router/dismissAncestorModal()``
 - ``Router/pop()``
@@ -91,6 +92,9 @@ These types remain available as compatibility and type-erasure surfaces. Prefer 
 - ``RoutedNavigationIntent``
 - ``RoutedNavigationResolution``
 - ``RoutedNavigationIntentResolving``
+- ``RoutingRestorationState``
+- ``RoutingRestorationEntry``
+- ``RoutingRestorationResult``
 - ``View/any()``
 - ``EnvironmentValues/router``
 
@@ -98,4 +102,5 @@ These types remain available as compatibility and type-erasure surfaces. Prefer 
 
 - <doc:BuilderFirstIntegration>
 - <doc:DeepLinkInputModeling>
+- <doc:RestorationFoundation>
 - <doc:PresentationSemantics>
