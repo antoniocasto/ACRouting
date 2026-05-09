@@ -6,6 +6,8 @@ Persist, track, and restore a single routed push stack from app-owned navigation
 
 `ACRouting` restoration is built on ``RoutedNavigationIntent``. The package stores no views, builders, presenters, interactors, or type-erased destinations in the restoration envelope. Your app provides serializable route payloads and a resolver, while ``RoutingRestorationController`` keeps the current restorable push stack in sync with an app-selected ``RoutingRestorationStore``.
 
+For a step-by-step integration walkthrough and catalog guidance, see <doc:RestorationExamples>.
+
 ## Configure Storage
 
 ```swift

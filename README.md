@@ -495,6 +495,7 @@ The package now includes a debug-only preview catalog for local exploration in X
 - Scope:
   - explicit push-stack control
   - builder-first integration through an app-owned router adapter
+  - ready-to-use restoration with an in-memory preview store
   - sheet and full-screen modal roots
   - alert and overlay semantics
   - a realistic mixed checkout-style flow built only from currently supported APIs

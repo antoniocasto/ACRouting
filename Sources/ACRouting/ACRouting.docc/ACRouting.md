@@ -112,4 +112,5 @@ These types remain available as compatibility and type-erasure surfaces. Prefer 
 - <doc:BuilderFirstIntegration>
 - <doc:DeepLinkInputModeling>
 - <doc:RestorationFoundation>
+- <doc:RestorationExamples>
 - <doc:PresentationSemantics>

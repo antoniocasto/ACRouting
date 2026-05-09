@@ -367,6 +367,10 @@ Restoration is only worth shipping once deep-link input and builder handoff rule
 
 - Restoration hardening patch.
 - Fix edge cases, expand regression coverage, and tighten documentation.
+- Validate DocC symbol links for the new restoration articles in CI or as a release checklist item.
+- Consider whether `RoutingRestorationController` should roll back its in-memory tracked stack when persistence fails after a record operation.
+- Add targeted examples or tests for apps that seed restoration state from a server or encrypted custom store.
+- Revisit preview catalog screenshots or hosted documentation examples once `v1.6.0` is promoted from draft PR to release.
 
 Why this version:
 State restoration should get one stabilization pass before more optional abstraction work is considered.

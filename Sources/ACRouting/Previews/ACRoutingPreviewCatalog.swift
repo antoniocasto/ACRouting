@@ -6,6 +6,7 @@ import SwiftUI
 /// The catalog intentionally covers:
 /// - basic push navigation and explicit pop APIs;
 /// - builder-first integration through an app-owned router adapter;
+/// - ready-to-use restoration through app-owned payloads and a restoration controller;
 /// - sheet and full-screen routed flows;
 /// - alerts, confirmation dialogs, and custom overlays;
 /// - a more complex checkout-style flow that combines multiple presentation styles.
@@ -54,6 +55,18 @@ private struct ACRoutingPreviewCatalogHome: View {
                     Button("Open Builder-First Demo") {
                         router.showScreen(.push) { _ in
                             BuilderFirstIntegrationDemoRoot()
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+
+                PreviewExampleCard(
+                    title: "Restoration",
+                    summary: "Shows the ready-to-use restoration workflow: tracked push intents, explicit stack mutation recording, unsupported payload handling, and replay from stored state."
+                ) {
+                    Button("Open Restoration Demo") {
+                        router.showScreen(.push) { _ in
+                            RestorationDemoRoot()
                         }
                     }
                     .buttonStyle(.borderedProminent)
@@ -164,6 +177,229 @@ private struct DemoScreen<Content: View>: View {
             .padding(24)
         }
         .navigationTitle(title)
+    }
+}
+
+// MARK: - Restoration Demo
+
+private enum RestorationDemoRoute: String, Codable, Hashable, Sendable {
+    case product
+    case reviews
+    case account
+    case legacy
+}
+
+private struct RestorationDemoResolver: RoutedNavigationIntentResolving {
+    func canResolve(_ payload: RestorationDemoRoute) -> Bool {
+        payload != .legacy
+    }
+
+    func presentation(for payload: RestorationDemoRoute) -> SegueOption {
+        switch payload {
+        case .product, .reviews, .legacy:
+            .push
+        case .account:
+            .sheet
+        }
+    }
+
+    func destination(for payload: RestorationDemoRoute, router: any Router) -> some View {
+        switch payload {
+        case .product:
+            RestorationProductScreen()
+        case .reviews:
+            RestorationReviewsScreen()
+        case .account:
+            RestorationAccountSheet()
+        case .legacy:
+            Text("Unsupported legacy route")
+        }
+    }
+}
+
+private final class PreviewRestorationStore<Payload>: RoutingRestorationStore
+where Payload: Codable & Hashable & Sendable {
+    private var state: RoutingRestorationState<Payload>?
+
+    func load() throws -> RoutingRestorationState<Payload>? {
+        state
+    }
+
+    func save(_ state: RoutingRestorationState<Payload>) throws {
+        self.state = state
+    }
+
+    func clear() throws {
+        state = nil
+    }
+}
+
+private struct RestorationDemoRoot: View {
+    @Environment(\.router) private var router
+    @State private var restoration = RoutingRestorationController(
+        payloadSchemaVersion: 1,
+        resolverPolicyVersion: 1,
+        contextID: "preview-catalog",
+        store: PreviewRestorationStore<RestorationDemoRoute>()
+    )
+    @State private var statusMessage = "No restoration action yet."
+    @State private var revision = 0
+
+    private let resolver = RestorationDemoResolver()
+
+    var body: some View {
+        DemoScreen(
+            title: "Restoration",
+            summary: "This demo uses a preview-only store, but the call sites match a production setup with `UserDefaultsRoutingRestorationStore`. Only supported `.push` routes are tracked for restoration."
+        ) {
+            restorationStateSummary
+
+            Button("Show Restorable Product") {
+                show(.product)
+            }
+            .buttonStyle(.borderedProminent)
+
+            Button("Show Restorable Reviews") {
+                show(.reviews)
+            }
+            .buttonStyle(.bordered)
+
+            Button("Open Account Sheet") {
+                show(.account)
+            }
+            .buttonStyle(.bordered)
+
+            Button("Try Unsupported Legacy Route") {
+                show(.legacy)
+            }
+            .buttonStyle(.bordered)
+
+            Divider()
+
+            Button("Seed Stored Product + Reviews Stack") {
+                seedStoredStack()
+            }
+            .buttonStyle(.bordered)
+
+            Button("Restore Stored Stack") {
+                restoreStoredStack()
+            }
+            .buttonStyle(.borderedProminent)
+
+            Button("Pop And Record") {
+                run("Popped one tracked route.") {
+                    try router.pop(restoration: restoration)
+                }
+            }
+            .buttonStyle(.bordered)
+
+            Button("Clear Restoration State") {
+                run("Cleared tracked and stored restoration state.") {
+                    try restoration.clear()
+                }
+            }
+            .buttonStyle(.bordered)
+        }
+    }
+
+    private var restorationStateSummary: some View {
+        let _ = revision
+        let trackedRoutes = restoration.trackedIntents.map(\.payload.rawValue).joined(separator: " → ")
+
+        return VStack(alignment: .leading, spacing: 8) {
+            Text("Tracked push stack")
+                .font(.headline)
+
+            Text(trackedRoutes.isEmpty ? "Empty" : trackedRoutes)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Text(statusMessage)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private func show(_ payload: RestorationDemoRoute) {
+        let intent = RoutedNavigationIntent(payload: payload)
+        run("Presented \(payload.rawValue). Only supported pushes are tracked.") {
+            _ = try router.showScreen(intent, using: resolver, restoration: restoration)
+        }
+    }
+
+    private func seedStoredStack() {
+        run("Stored a product → reviews stack without mutating the visible router path.") {
+            try restoration.clear()
+            try restoration.recordPush(RoutedNavigationIntent(payload: .product))
+            try restoration.recordPush(RoutedNavigationIntent(payload: .reviews))
+        }
+    }
+
+    private func restoreStoredStack() {
+        run("Restored the stored stack through Router.restore(_:using:).") {
+            _ = try restoration.restoreLoadedState(on: router, using: resolver)
+        }
+    }
+
+    private func run(_ successMessage: String, action: () throws -> Void) {
+        do {
+            try action()
+            statusMessage = successMessage
+        } catch {
+            statusMessage = "Restoration error: \(error.localizedDescription)"
+        }
+        revision += 1
+    }
+}
+
+private struct RestorationProductScreen: View {
+    @Environment(\.router) private var router
+
+    var body: some View {
+        DemoScreen(
+            title: "Restored Product",
+            summary: "This screen was built from a serializable app-owned payload. The view itself was never encoded."
+        ) {
+            Button("Back") {
+                router.pop()
+            }
+            .buttonStyle(.borderedProminent)
+        }
+    }
+}
+
+private struct RestorationReviewsScreen: View {
+    @Environment(\.router) private var router
+
+    var body: some View {
+        DemoScreen(
+            title: "Restored Reviews",
+            summary: "This second pushed screen demonstrates stack replay order when stored entries are restored."
+        ) {
+            Button("Back") {
+                router.pop()
+            }
+            .buttonStyle(.borderedProminent)
+        }
+    }
+}
+
+private struct RestorationAccountSheet: View {
+    @Environment(\.router) private var router
+
+    var body: some View {
+        DemoScreen(
+            title: "Transient Account Sheet",
+            summary: "The resolver can still present sheets through the same intent API, but sheets are intentionally not tracked in the v1.6.0 push-stack restoration scope."
+        ) {
+            Button("Dismiss Sheet") {
+                router.dismissScreen()
+            }
+            .buttonStyle(.borderedProminent)
+        }
     }
 }
 
@@ -816,6 +1052,11 @@ struct ACRoutingPreviewCatalog_Previews: PreviewProvider {
                 OverlayAndAlertsDemoRoot()
             }
             .previewDisplayName("Alerts And Overlay")
+
+            RouterView { _ in
+                RestorationDemoRoot()
+            }
+            .previewDisplayName("Restoration")
 
             RouterView { _ in
                 ComplexCheckoutDemoRoot()
