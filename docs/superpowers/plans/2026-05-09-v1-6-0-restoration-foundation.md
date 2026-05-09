@@ -803,7 +803,7 @@ rg "v1.5.3|does not persist or restore|Future restoration" README.md Sources/ACR
 
 Expected: no stale statement says restoration is wholly future work for the current release. `v1.5.3` may still appear in historical release notes and package-version examples.
 
-- [ ] **Step 8: Commit documentation**
+- [x] **Step 8: Commit documentation**
 
 ```bash
 git add README.md CHANGELOG.md docs/ROADMAP.md Sources/ACRouting/ACRouting.docc/ACRouting.md Sources/ACRouting/ACRouting.docc/DeepLinkInputModeling.md Sources/ACRouting/ACRouting.docc/RestorationFoundation.md
@@ -818,7 +818,7 @@ git commit -m "docs: document restoration foundation
 **Files:**
 - Verify: full repository
 
-- [ ] **Step 1: Run full local build**
+- [x] **Step 1: Run full local build**
 
 Run:
 
@@ -828,7 +828,7 @@ swift build
 
 Expected: build completes with exit code `0`.
 
-- [ ] **Step 2: Run full local test suite**
+- [x] **Step 2: Run full local test suite**
 
 Run:
 
@@ -838,7 +838,7 @@ swift test
 
 Expected: all Swift Testing suites pass.
 
-- [ ] **Step 3: Inspect changed files**
+- [x] **Step 3: Inspect changed files**
 
 Run:
 
