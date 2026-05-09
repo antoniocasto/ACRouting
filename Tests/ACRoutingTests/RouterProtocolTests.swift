@@ -304,6 +304,42 @@ private struct RestorationTestResolver: RoutedNavigationIntentResolving {
     }
 }
 
+private final class RouterRestorationRecordingStore<Payload>: RoutingRestorationStore
+where Payload: Codable & Hashable & Sendable {
+    var state: RoutingRestorationState<Payload>?
+    private(set) var savedStates: [RoutingRestorationState<Payload>] = []
+
+    func load() throws -> RoutingRestorationState<Payload>? {
+        state
+    }
+
+    func save(_ state: RoutingRestorationState<Payload>) throws {
+        self.state = state
+        savedStates.append(state)
+    }
+
+    func clear() throws {
+        state = nil
+    }
+}
+
+private enum RouterRestorationTestError: Error, Equatable {
+    case saveFailed
+}
+
+private struct ThrowingSaveRoutingRestorationStore<Payload>: RoutingRestorationStore
+where Payload: Codable & Hashable & Sendable {
+    func load() throws -> RoutingRestorationState<Payload>? {
+        nil
+    }
+
+    func save(_ state: RoutingRestorationState<Payload>) throws {
+        throw RouterRestorationTestError.saveFailed
+    }
+
+    func clear() throws {}
+}
+
 // MARK: - Router Protocol Default Parameter Tests
 
 @Suite("Router protocol defaults")
@@ -830,6 +866,134 @@ struct BuilderFirstRouterAdapterTests {
             restored: [.presented(detailIntent)]
         ))
         #expect(router.screenCalls.map(\.option) == [.push])
+    }
+
+    @Test("showRestorableScreen tracks and saves supported push intents")
+    func showRestorableScreenTracksSupportedPushIntents() throws {
+        let router = DestinationCapturingRouter()
+        let resolver = RestorationTestResolver()
+        let store = RouterRestorationRecordingStore<RestorationTestRoute>()
+        let restoration = makeRestorationController(store: store)
+        let intent = RoutedNavigationIntent(payload: RestorationTestRoute.detail)
+
+        let result = try router.showRestorableScreen(
+            intent,
+            using: resolver,
+            restoration: restoration
+        )
+
+        #expect(result == .presented(intent))
+        #expect(router.screenCalls.map(\.option) == [.push])
+        #expect(restoration.trackedIntents == [intent])
+        #expect(store.savedStates.last?.entries.map(\.intent) == [intent])
+    }
+
+    @Test("showRestorableScreen does not track unsupported payloads")
+    func showRestorableScreenDoesNotTrackUnsupportedPayloads() throws {
+        let router = DestinationCapturingRouter()
+        let resolver = RestorationTestResolver()
+        let store = RouterRestorationRecordingStore<RestorationTestRoute>()
+        let restoration = makeRestorationController(store: store)
+        let intent = RoutedNavigationIntent(payload: RestorationTestRoute.unsupported)
+
+        let result = try router.showRestorableScreen(
+            intent,
+            using: resolver,
+            restoration: restoration
+        )
+
+        #expect(result == .unsupported(intent))
+        #expect(router.screenCalls.isEmpty)
+        #expect(restoration.trackedIntents.isEmpty)
+        #expect(store.savedStates.isEmpty)
+    }
+
+    @Test("showRestorableScreen presents but does not track sheets")
+    func showRestorableScreenDoesNotTrackNonPushPresentations() throws {
+        let router = DestinationCapturingRouter()
+        let resolver = RestorationTestResolver()
+        let store = RouterRestorationRecordingStore<RestorationTestRoute>()
+        let restoration = makeRestorationController(store: store)
+        let intent = RoutedNavigationIntent(payload: RestorationTestRoute.settings)
+
+        let result = try router.showRestorableScreen(
+            intent,
+            using: resolver,
+            restoration: restoration
+        )
+
+        #expect(result == .presented(intent))
+        #expect(router.screenCalls.map(\.option) == [.sheet])
+        #expect(restoration.trackedIntents.isEmpty)
+        #expect(store.savedStates.isEmpty)
+    }
+
+    @Test("restorable pop helpers mutate router and controller together")
+    func restorablePopHelpersMutateRouterAndControllerTogether() throws {
+        let router = SpyRouter()
+        let store = RouterRestorationRecordingStore<RestorationTestRoute>()
+        let restoration = makeRestorationController(store: store)
+        let detailIntent = RoutedNavigationIntent(payload: RestorationTestRoute.detail)
+        let commentsIntent = RoutedNavigationIntent(payload: RestorationTestRoute.comments)
+        let settingsIntent = RoutedNavigationIntent(payload: RestorationTestRoute.settings)
+
+        try restoration.recordPresentedPush(detailIntent)
+        try restoration.recordPresentedPush(commentsIntent)
+        try restoration.recordPresentedPush(settingsIntent)
+
+        try router.popRestorableScreen(restoration: restoration)
+        #expect(router.popCallCount == 1)
+        #expect(restoration.trackedIntents == [detailIntent, commentsIntent])
+
+        try router.dismissRestorableScreen(restoration: restoration)
+        #expect(router.dismissScreenCallCount == 1)
+        #expect(restoration.trackedIntents == [detailIntent])
+
+        try restoration.recordPresentedPush(commentsIntent)
+        try router.popRestorableScreens(count: 2, restoration: restoration)
+        #expect(router.popCountCalls.contains(2))
+        #expect(restoration.trackedIntents.isEmpty)
+
+        try restoration.recordPresentedPush(detailIntent)
+        try router.popRestorableStackToRoot(restoration: restoration)
+        #expect(router.popToRootCallCount == 1)
+        #expect(restoration.trackedIntents.isEmpty)
+    }
+
+    @Test("showRestorableScreen propagates storage save failures")
+    func showRestorableScreenPropagatesStorageFailures() throws {
+        let router = DestinationCapturingRouter()
+        let resolver = RestorationTestResolver()
+        let restoration = RoutingRestorationController(
+            payloadSchemaVersion: 1,
+            resolverPolicyVersion: 1,
+            store: ThrowingSaveRoutingRestorationStore<RestorationTestRoute>()
+        )
+        let intent = RoutedNavigationIntent(payload: RestorationTestRoute.detail)
+
+        do {
+            _ = try router.showRestorableScreen(
+                intent,
+                using: resolver,
+                restoration: restoration
+            )
+            Issue.record("Expected storage failure to be propagated")
+        } catch let error as RouterRestorationTestError {
+            #expect(error == .saveFailed)
+        }
+
+        #expect(router.screenCalls.map(\.option) == [.push])
+    }
+
+    private func makeRestorationController(
+        store: RouterRestorationRecordingStore<RestorationTestRoute>
+    ) -> RoutingRestorationController<RestorationTestRoute> {
+        RoutingRestorationController(
+            payloadSchemaVersion: 1,
+            resolverPolicyVersion: 1,
+            contextID: "main",
+            store: store
+        )
     }
 }
 

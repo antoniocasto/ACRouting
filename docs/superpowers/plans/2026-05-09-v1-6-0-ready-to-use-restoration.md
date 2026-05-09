@@ -355,7 +355,7 @@ git commit -m "feat: add restoration controller"
 - Modify: `Tests/ACRoutingTests/RouterProtocolTests.swift`
 - Modify: `docs/superpowers/plans/2026-05-09-v1-6-0-ready-to-use-restoration.md`
 
-- [ ] **Step 1: Write failing router convenience tests**
+- [x] **Step 1: Write failing router convenience tests**
 
 Add tests proving:
 
@@ -376,7 +376,7 @@ func restorablePopHelpersMutateRouterAndControllerTogether() throws { ... }
 func showRestorableScreenPropagatesStorageFailures() throws { ... }
 ```
 
-- [ ] **Step 2: Run RED router convenience tests**
+- [x] **Step 2: Run RED router convenience tests**
 
 Run:
 
@@ -386,7 +386,7 @@ swift test --filter showRestorableScreen
 
 Expected: compile fails because `showRestorableScreen` and helper APIs do not exist.
 
-- [ ] **Step 3: Implement router convenience APIs**
+- [x] **Step 3: Implement router convenience APIs**
 
 Create `Router+Restoration.swift` with:
 
@@ -423,7 +423,7 @@ Helper behavior:
 - `dismissRestorableScreen` calls `dismissScreen()` then `recordDismissScreen()`.
 - `popRestorableStackToRoot` calls `popToRoot()` then `recordPopToRoot()`.
 
-- [ ] **Step 4: Run GREEN router convenience tests**
+- [x] **Step 4: Run GREEN router convenience tests**
 
 Run:
 
@@ -434,7 +434,7 @@ swift test --filter restorable
 
 Expected: router convenience tests pass.
 
-- [ ] **Step 5: Commit router convenience API**
+- [x] **Step 5: Commit router convenience API**
 
 Run:
 
