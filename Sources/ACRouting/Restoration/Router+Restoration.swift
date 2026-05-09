@@ -7,7 +7,7 @@ public extension Router {
     /// presentation. Non-push presentations remain transient and are not tracked in
     /// the current restoration scope.
     @discardableResult
-    func showRestorableScreen<Resolver>(
+    func showScreen<Resolver>(
         _ intent: RoutedNavigationIntent<Resolver.Payload>,
         using resolver: Resolver,
         restoration: RoutingRestorationController<Resolver.Payload>
@@ -17,14 +17,14 @@ public extension Router {
         let result = showScreen(intent, using: resolver)
 
         if case .presented = result, presentation == .push {
-            try restoration.recordPresentedPush(intent)
+            try restoration.recordPush(intent)
         }
 
         return result
     }
 
     /// Pops one pushed restorable screen and records the matching restoration mutation.
-    func popRestorableScreen<Payload>(
+    func pop<Payload>(
         restoration: RoutingRestorationController<Payload>
     ) throws where Payload: Codable & Hashable & Sendable {
         pop()
@@ -32,7 +32,7 @@ public extension Router {
     }
 
     /// Pops pushed restorable screens and records the matching restoration mutation.
-    func popRestorableScreens<Payload>(
+    func pop<Payload>(
         count: Int,
         restoration: RoutingRestorationController<Payload>
     ) throws where Payload: Codable & Hashable & Sendable {
@@ -41,7 +41,7 @@ public extension Router {
     }
 
     /// Dismisses the current pushed restorable screen and records the matching mutation.
-    func dismissRestorableScreen<Payload>(
+    func dismissScreen<Payload>(
         restoration: RoutingRestorationController<Payload>
     ) throws where Payload: Codable & Hashable & Sendable {
         dismissScreen()
@@ -49,7 +49,7 @@ public extension Router {
     }
 
     /// Pops the restorable push stack to root and records the matching mutation.
-    func popRestorableStackToRoot<Payload>(
+    func popToRoot<Payload>(
         restoration: RoutingRestorationController<Payload>
     ) throws where Payload: Codable & Hashable & Sendable {
         popToRoot()

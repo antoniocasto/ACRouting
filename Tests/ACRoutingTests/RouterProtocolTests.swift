@@ -868,15 +868,15 @@ struct BuilderFirstRouterAdapterTests {
         #expect(router.screenCalls.map(\.option) == [.push])
     }
 
-    @Test("showRestorableScreen tracks and saves supported push intents")
-    func showRestorableScreenTracksSupportedPushIntents() throws {
+    @Test("showScreen tracks and saves supported push intents")
+    func showScreenTracksSupportedPushIntents() throws {
         let router = DestinationCapturingRouter()
         let resolver = RestorationTestResolver()
         let store = RouterRestorationRecordingStore<RestorationTestRoute>()
         let restoration = makeRestorationController(store: store)
         let intent = RoutedNavigationIntent(payload: RestorationTestRoute.detail)
 
-        let result = try router.showRestorableScreen(
+        let result = try router.showScreen(
             intent,
             using: resolver,
             restoration: restoration
@@ -888,15 +888,15 @@ struct BuilderFirstRouterAdapterTests {
         #expect(store.savedStates.last?.entries.map(\.intent) == [intent])
     }
 
-    @Test("showRestorableScreen does not track unsupported payloads")
-    func showRestorableScreenDoesNotTrackUnsupportedPayloads() throws {
+    @Test("showScreen does not track unsupported payloads")
+    func showScreenDoesNotTrackUnsupportedPayloads() throws {
         let router = DestinationCapturingRouter()
         let resolver = RestorationTestResolver()
         let store = RouterRestorationRecordingStore<RestorationTestRoute>()
         let restoration = makeRestorationController(store: store)
         let intent = RoutedNavigationIntent(payload: RestorationTestRoute.unsupported)
 
-        let result = try router.showRestorableScreen(
+        let result = try router.showScreen(
             intent,
             using: resolver,
             restoration: restoration
@@ -908,15 +908,15 @@ struct BuilderFirstRouterAdapterTests {
         #expect(store.savedStates.isEmpty)
     }
 
-    @Test("showRestorableScreen presents but does not track sheets")
-    func showRestorableScreenDoesNotTrackNonPushPresentations() throws {
+    @Test("showScreen presents but does not track sheets")
+    func showScreenDoesNotTrackNonPushPresentations() throws {
         let router = DestinationCapturingRouter()
         let resolver = RestorationTestResolver()
         let store = RouterRestorationRecordingStore<RestorationTestRoute>()
         let restoration = makeRestorationController(store: store)
         let intent = RoutedNavigationIntent(payload: RestorationTestRoute.settings)
 
-        let result = try router.showRestorableScreen(
+        let result = try router.showScreen(
             intent,
             using: resolver,
             restoration: restoration
@@ -937,31 +937,31 @@ struct BuilderFirstRouterAdapterTests {
         let commentsIntent = RoutedNavigationIntent(payload: RestorationTestRoute.comments)
         let settingsIntent = RoutedNavigationIntent(payload: RestorationTestRoute.settings)
 
-        try restoration.recordPresentedPush(detailIntent)
-        try restoration.recordPresentedPush(commentsIntent)
-        try restoration.recordPresentedPush(settingsIntent)
+        try restoration.recordPush(detailIntent)
+        try restoration.recordPush(commentsIntent)
+        try restoration.recordPush(settingsIntent)
 
-        try router.popRestorableScreen(restoration: restoration)
+        try router.pop(restoration: restoration)
         #expect(router.popCallCount == 1)
         #expect(restoration.trackedIntents == [detailIntent, commentsIntent])
 
-        try router.dismissRestorableScreen(restoration: restoration)
+        try router.dismissScreen(restoration: restoration)
         #expect(router.dismissScreenCallCount == 1)
         #expect(restoration.trackedIntents == [detailIntent])
 
-        try restoration.recordPresentedPush(commentsIntent)
-        try router.popRestorableScreens(count: 2, restoration: restoration)
+        try restoration.recordPush(commentsIntent)
+        try router.pop(count: 2, restoration: restoration)
         #expect(router.popCountCalls.contains(2))
         #expect(restoration.trackedIntents.isEmpty)
 
-        try restoration.recordPresentedPush(detailIntent)
-        try router.popRestorableStackToRoot(restoration: restoration)
+        try restoration.recordPush(detailIntent)
+        try router.popToRoot(restoration: restoration)
         #expect(router.popToRootCallCount == 1)
         #expect(restoration.trackedIntents.isEmpty)
     }
 
-    @Test("showRestorableScreen propagates storage save failures")
-    func showRestorableScreenPropagatesStorageFailures() throws {
+    @Test("showScreen propagates storage save failures")
+    func showScreenPropagatesStorageFailures() throws {
         let router = DestinationCapturingRouter()
         let resolver = RestorationTestResolver()
         let restoration = RoutingRestorationController(
@@ -972,7 +972,7 @@ struct BuilderFirstRouterAdapterTests {
         let intent = RoutedNavigationIntent(payload: RestorationTestRoute.detail)
 
         do {
-            _ = try router.showRestorableScreen(
+            _ = try router.showScreen(
                 intent,
                 using: resolver,
                 restoration: restoration

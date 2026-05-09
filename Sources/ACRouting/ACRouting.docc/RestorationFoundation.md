@@ -26,14 +26,14 @@ Use ``UserDefaultsRoutingRestorationStore`` for simple local persistence, or imp
 ## Present Restorable Pushes
 
 ```swift
-try router.showRestorableScreen(
+try router.showScreen(
     RoutedNavigationIntent(payload: AppRoute.detail(id: 42)),
     using: AppRouteResolver(builder: builder),
     restoration: restoration
 )
 ```
 
-``Router/showRestorableScreen(_:using:restoration:)`` presents through the same resolver-based API as ``Router/showScreen(_:using:)``. It records and saves the intent only after a supported `.push` presentation. Unsupported payloads and non-push presentations are not tracked in the current push-stack restoration scope.
+``Router/showScreen(_:using:restoration:)`` presents through the same resolver-based API as ``Router/showScreen(_:using:)``. It records and saves the intent only after a supported `.push` presentation. Unsupported payloads and non-push presentations are not tracked in the current push-stack restoration scope.
 
 ## Restore State
 
@@ -64,10 +64,10 @@ try restoration.recordPopToRoot()
 The router helpers combine both operations when that is more convenient:
 
 ```swift
-try router.popRestorableScreen(restoration: restoration)
-try router.popRestorableScreens(count: 2, restoration: restoration)
-try router.dismissRestorableScreen(restoration: restoration)
-try router.popRestorableStackToRoot(restoration: restoration)
+try router.pop(restoration: restoration)
+try router.pop(count: 2, restoration: restoration)
+try router.dismissScreen(restoration: restoration)
+try router.popToRoot(restoration: restoration)
 ```
 
 ## Scope

@@ -356,7 +356,7 @@ Already implemented:
 - `RoutingRestorationStore` defines the small storage boundary for complete restoration envelopes.
 - `UserDefaultsRoutingRestorationStore` provides JSON-backed local persistence with deterministic storage error categories.
 - `RoutingRestorationController` tracks successful restorable push intents, saves current state, loads stored state, restores through concrete router behavior, and synchronizes after partial restoration.
-- `Router.showRestorableScreen(_:using:restoration:)` combines resolver-based presentation with push-only tracking and persistence.
+- `Router.showScreen(_:using:restoration:)` combines resolver-based presentation with push-only tracking and persistence.
 - Explicit helper APIs cover pop, dismiss, pop count, and pop-to-root tracking without serializing `RouterView` state.
 - Restoration documentation shows ready-to-use `UserDefaults` setup and explicitly defers routed modal, overlay, alert, multi-root, tab/window, and cross-context restoration.
 

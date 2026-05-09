@@ -87,8 +87,8 @@ struct RoutingRestorationControllerTests {
         let detailIntent = RoutedNavigationIntent(payload: ControllerTestRoute.detail)
         let commentsIntent = RoutedNavigationIntent(payload: ControllerTestRoute.comments)
 
-        try controller.recordPresentedPush(detailIntent)
-        try controller.recordPresentedPush(commentsIntent)
+        try controller.recordPush(detailIntent)
+        try controller.recordPush(commentsIntent)
 
         #expect(controller.trackedIntents == [detailIntent, commentsIntent])
 
@@ -108,9 +108,9 @@ struct RoutingRestorationControllerTests {
         let commentsIntent = RoutedNavigationIntent(payload: ControllerTestRoute.comments)
         let settingsIntent = RoutedNavigationIntent(payload: ControllerTestRoute.settings)
 
-        try controller.recordPresentedPush(detailIntent)
-        try controller.recordPresentedPush(commentsIntent)
-        try controller.recordPresentedPush(settingsIntent)
+        try controller.recordPush(detailIntent)
+        try controller.recordPush(commentsIntent)
+        try controller.recordPush(settingsIntent)
         try controller.recordPop()
         #expect(controller.trackedIntents == [detailIntent, commentsIntent])
 
@@ -120,7 +120,7 @@ struct RoutingRestorationControllerTests {
         try controller.recordPop(count: 5)
         #expect(controller.trackedIntents.isEmpty)
 
-        try controller.recordPresentedPush(detailIntent)
+        try controller.recordPush(detailIntent)
         try controller.recordPop(count: 0)
         #expect(controller.trackedIntents == [detailIntent])
 
@@ -134,7 +134,7 @@ struct RoutingRestorationControllerTests {
         let store = RecordingRoutingRestorationStore<ControllerTestRoute>()
         let controller = makeController(store: store)
 
-        try controller.recordPresentedPush(RoutedNavigationIntent(payload: .detail))
+        try controller.recordPush(RoutedNavigationIntent(payload: .detail))
         try controller.clear()
 
         #expect(controller.trackedIntents.isEmpty)

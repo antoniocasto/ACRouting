@@ -15,7 +15,7 @@
 - Create `Sources/ACRouting/Restoration/RoutingRestorationStore.swift`: public storage protocol plus deterministic storage error categories.
 - Create `Sources/ACRouting/Restoration/UserDefaultsRoutingRestorationStore.swift`: ready-to-use JSON-backed `UserDefaults` adapter.
 - Create `Sources/ACRouting/Restoration/RoutingRestorationController.swift`: public `@MainActor` controller with type-erased store, tracked intent stack, save/load/restore, pop/dismiss/root tracking, and state export.
-- Create `Sources/ACRouting/Restoration/Router+Restoration.swift`: router convenience APIs for `showRestorableScreen(...)` and optional combined pop/dismiss helpers.
+- Create `Sources/ACRouting/Restoration/Router+Restoration.swift`: router convenience APIs for `showScreen(...)` and optional combined pop/dismiss helpers.
 - Create `Tests/ACRoutingTests/RoutingRestorationStoreTests.swift`: memory-store conformance, `UserDefaults` round-trip, clear, corrupted data, and unsupported payload decode tests.
 - Create `Tests/ACRoutingTests/RoutingRestorationControllerTests.swift`: controller tracking, metadata export, pop/dismiss/root tracking, restore synchronization, load behavior, and unsupported/non-push handling.
 - Modify `Tests/ACRoutingTests/RouterProtocolTests.swift`: convenience API behavior on concrete router spies and storage failure propagation.
@@ -309,7 +309,7 @@ where Payload: Codable & Hashable & Sendable {
     public func save() throws
     public func loadState() throws -> RoutingRestorationState<Payload>?
     @discardableResult public func restoreLoadedState<Resolver>(on router: any Router, using resolver: Resolver) throws -> RoutingRestorationResult<Payload>? where Resolver: RoutedNavigationIntentResolving, Resolver.Payload == Payload
-    public func recordPresentedPush(_ intent: RoutedNavigationIntent<Payload>) throws
+    public func recordPush(_ intent: RoutedNavigationIntent<Payload>) throws
     public func recordPop() throws
     public func recordPop(count: Int) throws
     public func recordDismissScreen() throws
@@ -322,7 +322,7 @@ Implementation notes:
 
 - Store closures internally as `AnyRoutingRestorationStore<Payload>`.
 - `currentState()` builds entries from `trackedIntents`.
-- `recordPresentedPush(_:)` appends then saves.
+- `recordPush(_:)` appends then saves.
 - `recordPop(count:)` ignores non-positive counts and removes at most the tracked count.
 - `recordDismissScreen()` delegates to `recordPop()`.
 - `recordPopToRoot()` clears tracked intents and saves an empty state.
@@ -360,20 +360,20 @@ git commit -m "feat: add restoration controller"
 Add tests proving:
 
 ```swift
-@Test("showRestorableScreen tracks and saves supported push intents")
-func showRestorableScreenTracksSupportedPushIntents() throws { ... }
+@Test("showScreen tracks and saves supported push intents")
+func showScreenTracksSupportedPushIntents() throws { ... }
 
-@Test("showRestorableScreen does not track unsupported payloads")
-func showRestorableScreenDoesNotTrackUnsupportedPayloads() throws { ... }
+@Test("showScreen does not track unsupported payloads")
+func showScreenDoesNotTrackUnsupportedPayloads() throws { ... }
 
-@Test("showRestorableScreen presents but does not track sheets")
-func showRestorableScreenDoesNotTrackNonPushPresentations() throws { ... }
+@Test("showScreen presents but does not track sheets")
+func showScreenDoesNotTrackNonPushPresentations() throws { ... }
 
 @Test("restorable pop helpers mutate router and controller together")
 func restorablePopHelpersMutateRouterAndControllerTogether() throws { ... }
 
-@Test("showRestorableScreen propagates storage save failures")
-func showRestorableScreenPropagatesStorageFailures() throws { ... }
+@Test("showScreen propagates storage save failures")
+func showScreenPropagatesStorageFailures() throws { ... }
 ```
 
 - [x] **Step 2: Run RED router convenience tests**
@@ -381,10 +381,10 @@ func showRestorableScreenPropagatesStorageFailures() throws { ... }
 Run:
 
 ```bash
-swift test --filter showRestorableScreen
+swift test --filter showScreen
 ```
 
-Expected: compile fails because `showRestorableScreen` and helper APIs do not exist.
+Expected: compile fails because `showScreen` and helper APIs do not exist.
 
 - [x] **Step 3: Implement router convenience APIs**
 
@@ -395,7 +395,7 @@ import SwiftUI
 
 public extension Router {
     @discardableResult
-    func showRestorableScreen<Resolver>(
+    func showScreen<Resolver>(
         _ intent: RoutedNavigationIntent<Resolver.Payload>,
         using resolver: Resolver,
         restoration: RoutingRestorationController<Resolver.Payload>
@@ -404,31 +404,31 @@ public extension Router {
         let presentation = resolver.canResolve(intent.payload) ? resolver.presentation(for: intent.payload) : nil
         let result = showScreen(intent, using: resolver)
         if case .presented = result, presentation == .push {
-            try restoration.recordPresentedPush(intent)
+            try restoration.recordPush(intent)
         }
         return result
     }
 
-    func popRestorableScreen<Payload>(restoration: RoutingRestorationController<Payload>) throws { ... }
-    func popRestorableScreens<Payload>(count: Int, restoration: RoutingRestorationController<Payload>) throws { ... }
-    func dismissRestorableScreen<Payload>(restoration: RoutingRestorationController<Payload>) throws { ... }
-    func popRestorableStackToRoot<Payload>(restoration: RoutingRestorationController<Payload>) throws { ... }
+    func pop<Payload>(restoration: RoutingRestorationController<Payload>) throws { ... }
+    func pop<Payload>(count: Int, restoration: RoutingRestorationController<Payload>) throws { ... }
+    func dismissScreen<Payload>(restoration: RoutingRestorationController<Payload>) throws { ... }
+    func popToRoot<Payload>(restoration: RoutingRestorationController<Payload>) throws { ... }
 }
 ```
 
 Helper behavior:
 
-- `popRestorableScreen` calls `pop()` then `recordPop()`.
-- `popRestorableScreens(count:)` calls `pop(count:)` then `recordPop(count:)`.
-- `dismissRestorableScreen` calls `dismissScreen()` then `recordDismissScreen()`.
-- `popRestorableStackToRoot` calls `popToRoot()` then `recordPopToRoot()`.
+- `pop` calls `pop()` then `recordPop()`.
+- `pop(count:)` calls `pop(count:)` then `recordPop(count:)`.
+- `dismissScreen` calls `dismissScreen()` then `recordDismissScreen()`.
+- `popToRoot` calls `popToRoot()` then `recordPopToRoot()`.
 
 - [x] **Step 4: Run GREEN router convenience tests**
 
 Run:
 
 ```bash
-swift test --filter showRestorableScreen
+swift test --filter showScreen
 swift test --filter restorable
 ```
 
@@ -466,7 +466,7 @@ let restoration = RoutingRestorationController(
     store: store
 )
 
-try router.showRestorableScreen(
+try router.showScreen(
     RoutedNavigationIntent(payload: .detail(id: 42)),
     using: AppRouteResolver(builder: builder),
     restoration: restoration
@@ -491,7 +491,7 @@ Also document:
 Run:
 
 ```bash
-rg "RoutingRestorationStore|UserDefaultsRoutingRestorationStore|RoutingRestorationController|showRestorableScreen|popRestorable|recordPop|recordDismissScreen|recordPopToRoot" README.md Sources/ACRouting/ACRouting.docc CHANGELOG.md docs/ROADMAP.md
+rg "RoutingRestorationStore|UserDefaultsRoutingRestorationStore|RoutingRestorationController|showScreen\\(_:using:restoration:\\)|pop\\(restoration:|recordPop|recordDismissScreen|recordPopToRoot" README.md Sources/ACRouting/ACRouting.docc CHANGELOG.md docs/ROADMAP.md
 ```
 
 Expected: matches show all new public API in user-facing docs.

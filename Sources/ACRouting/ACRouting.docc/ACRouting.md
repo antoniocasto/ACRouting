@@ -66,17 +66,17 @@ For behavior details and supported limits, see <doc:PresentationSemantics>.
 
 - ``Router/showScreen(_:destination:)``
 - ``Router/showScreen(_:using:)``
-- ``Router/showRestorableScreen(_:using:restoration:)``
+- ``Router/showScreen(_:using:restoration:)``
 - ``Router/restore(_:using:)``
 - ``Router/dismissScreen()``
-- ``Router/dismissRestorableScreen(restoration:)``
+- ``Router/dismissScreen(restoration:)``
 - ``Router/dismissAncestorModal()``
 - ``Router/pop()``
 - ``Router/pop(count:)``
-- ``Router/popRestorableScreen(restoration:)``
-- ``Router/popRestorableScreens(count:restoration:)``
+- ``Router/pop(restoration:)``
+- ``Router/pop(count:restoration:)``
 - ``Router/popToRoot()``
-- ``Router/popRestorableStackToRoot(restoration:)``
+- ``Router/popToRoot(restoration:)``
 
 ### Alerts And Overlays
 

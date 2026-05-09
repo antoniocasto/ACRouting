@@ -103,7 +103,7 @@ where Payload: Codable & Hashable & Sendable {
     }
 
     /// Records a successfully presented push intent and persists the updated state.
-    public func recordPresentedPush(_ intent: RoutedNavigationIntent<Payload>) throws {
+    public func recordPush(_ intent: RoutedNavigationIntent<Payload>) throws {
         intents.append(intent)
         try save()
     }

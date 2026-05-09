@@ -320,7 +320,7 @@ let restoration = RoutingRestorationController(
     store: store
 )
 
-try router.showRestorableScreen(
+try router.showScreen(
     RoutedNavigationIntent(payload: AppRoute.detail(id: 42)),
     using: AppRouteResolver(builder: builder),
     restoration: restoration
@@ -336,12 +336,12 @@ let result = try restoration.restoreLoadedState(
 )
 ```
 
-If your app mutates the stack outside `showRestorableScreen`, record the matching restoration mutation explicitly:
+If your app mutates the stack outside the `showScreen(_:using:restoration:)` overload, record the matching restoration mutation explicitly:
 
 ```swift
-try router.popRestorableScreen(restoration: restoration)
-try router.dismissRestorableScreen(restoration: restoration)
-try router.popRestorableStackToRoot(restoration: restoration)
+try router.pop(restoration: restoration)
+try router.dismissScreen(restoration: restoration)
+try router.popToRoot(restoration: restoration)
 ```
 
 For custom persistence, implement `RoutingRestorationStore` and pass that store to `RoutingRestorationController`. The built-in `UserDefaultsRoutingRestorationStore` stores complete `RoutingRestorationState` envelopes as JSON data and throws `RoutingRestorationStorageError` for deterministic encode/decode failure categories.

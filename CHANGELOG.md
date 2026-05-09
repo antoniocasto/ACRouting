@@ -12,7 +12,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 - Added a versioned `RoutingRestorationState` envelope for app-owned navigation payload persistence.
 - Added `Router.restore(_:using:)` for replaying supported single-context push stacks through app-owned resolvers.
 - Added `RoutingRestorationStore`, `UserDefaultsRoutingRestorationStore`, and `RoutingRestorationController` for ready-to-use intent-driven restoration.
-- Added `Router.showRestorableScreen(_:using:restoration:)` and explicit restorable pop/dismiss/root helpers.
+- Added `Router.showScreen(_:using:restoration:)` and explicit restorable pop/dismiss/root helpers.
 - Added deterministic `RoutingRestorationStorageError` categories for built-in storage encode/decode failures.
 - Documented the `v1.6.0` ready-to-use restoration scope, app-owned persistence boundary, and unsupported routed modal/cross-context restoration cases.
 

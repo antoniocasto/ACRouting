@@ -27,7 +27,7 @@ let restoration = RoutingRestorationController(
     store: store
 )
 
-router.showRestorableScreen(
+try router.showScreen(
     RoutedNavigationIntent(payload: .detail(id: 42)),
     using: AppRouteResolver(builder: builder),
     restoration: restoration
@@ -122,11 +122,11 @@ The controller will not observe arbitrary `RouterView` mutations automatically i
 
 ## Convenience Router APIs
 
-Add Router extension helpers:
+Add Router extension helpers that follow the existing `Router` verb style and use a `restoration:` label for the restorable variant:
 
 ```swift
 @discardableResult
-func showRestorableScreen<Resolver>(
+func showScreen<Resolver>(
     _ intent: RoutedNavigationIntent<Resolver.Payload>,
     using resolver: Resolver,
     restoration: RoutingRestorationController<Resolver.Payload>
@@ -198,7 +198,7 @@ Update the existing restoration docs so the primary path is ready-to-use:
 
 1. Create a `UserDefaultsRoutingRestorationStore`.
 2. Create a `RoutingRestorationController`.
-3. Navigate with `showRestorableScreen`.
+3. Navigate with `showScreen(_:using:restoration:)`.
 4. Record explicit stack mutations when using `pop`, `dismissScreen`, or `popToRoot`.
 5. Restore loaded state on app/flow start.
 
