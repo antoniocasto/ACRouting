@@ -510,7 +510,7 @@ git commit -m "docs: document ready-to-use restoration"
 **Files:**
 - Modify: `docs/superpowers/plans/2026-05-09-v1-6-0-ready-to-use-restoration.md`
 
-- [ ] **Step 1: Run full build**
+- [x] **Step 1: Run full build**
 
 Run:
 
@@ -520,7 +520,7 @@ swift build
 
 Expected: build exits 0.
 
-- [ ] **Step 2: Run full test suite**
+- [x] **Step 2: Run full test suite**
 
 Run:
 
@@ -530,7 +530,7 @@ swift test
 
 Expected: test suite exits 0.
 
-- [ ] **Step 3: Review diff and status**
+- [x] **Step 3: Review diff and status**
 
 Run:
 
@@ -542,7 +542,7 @@ git log --oneline -5
 
 Expected: only intentional ready-to-use restoration files are modified, and recent commits are coherent.
 
-- [ ] **Step 4: Commit final plan checkbox updates if needed**
+- [x] **Step 4: Commit final plan checkbox updates if needed**
 
 Run:
 
