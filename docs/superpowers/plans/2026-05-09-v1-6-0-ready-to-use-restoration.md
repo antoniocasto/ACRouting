@@ -553,7 +553,7 @@ git commit -m "docs: complete ready-to-use restoration plan"
 
 Expected: commit is created only if the plan has uncommitted checkbox updates.
 
-- [ ] **Step 5: Push branch and update draft PR #50**
+- [x] **Step 5: Push branch and update draft PR #50**
 
 Run:
 
