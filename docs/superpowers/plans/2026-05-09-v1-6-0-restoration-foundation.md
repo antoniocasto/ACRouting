@@ -849,7 +849,7 @@ git diff --stat develop...HEAD
 
 Expected: only restoration foundation source, tests, docs, changelog, roadmap, and design note files are changed.
 
-- [ ] **Step 4: Push branch**
+- [x] **Step 4: Push branch**
 
 Run:
 
