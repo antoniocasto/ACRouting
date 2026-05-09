@@ -327,7 +327,7 @@ swift test --filter RoutingRestorationState
 
 Expected: all `RoutingRestorationState` tests pass.
 
-- [ ] **Step 5: Commit restoration models**
+- [x] **Step 5: Commit restoration models**
 
 ```bash
 git add Sources/ACRouting/Models/RoutingRestorationState.swift Tests/ACRoutingTests/ModelTests.swift
@@ -344,7 +344,7 @@ git commit -m "feat: add routing restoration state
 - Modify: `Sources/ACRouting/Core/Router.swift`
 - Modify: `Tests/ACRoutingTests/RouterProtocolTests.swift`
 
-- [ ] **Step 1: Add failing restore API tests**
+- [x] **Step 1: Add failing restore API tests**
 
 Add this helper enum and resolver near `DeepLinkTestRoute` in `Tests/ACRoutingTests/RouterProtocolTests.swift`:
 
@@ -455,7 +455,7 @@ func restoreRejectsNonPushPresentation() {
 }
 ```
 
-- [ ] **Step 2: Run restore API tests and verify they fail**
+- [x] **Step 2: Run restore API tests and verify they fail**
 
 Run:
 
@@ -465,7 +465,7 @@ swift test --filter restore
 
 Expected: compile fails because `Router.restore(_:using:)` and `RoutingRestorationResult` do not exist.
 
-- [ ] **Step 3: Add restore result type**
+- [x] **Step 3: Add restore result type**
 
 Create `Sources/ACRouting/Models/RoutingRestorationResult.swift`:
 
@@ -502,7 +502,7 @@ public enum RoutingRestorationResult<Payload>: Equatable, Sendable where Payload
 }
 ```
 
-- [ ] **Step 4: Add `Router.restore(_:using:)` extension**
+- [x] **Step 4: Add `Router.restore(_:using:)` extension**
 
 Add this after the existing `showScreen(_:using:)` extension in `Sources/ACRouting/Core/Router.swift`:
 
@@ -552,7 +552,7 @@ public extension Router {
 }
 ```
 
-- [ ] **Step 5: Run restore API tests and verify they pass**
+- [x] **Step 5: Run restore API tests and verify they pass**
 
 Run:
 

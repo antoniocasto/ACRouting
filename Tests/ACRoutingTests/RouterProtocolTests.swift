@@ -278,6 +278,32 @@ private struct DeepLinkTestResolver: RoutedNavigationIntentResolving {
     }
 }
 
+private enum RestorationTestRoute: String, Codable, Hashable, Sendable {
+    case detail
+    case comments
+    case settings
+    case unsupported
+}
+
+private struct RestorationTestResolver: RoutedNavigationIntentResolving {
+    func canResolve(_ payload: RestorationTestRoute) -> Bool {
+        payload != .unsupported
+    }
+
+    func presentation(for payload: RestorationTestRoute) -> SegueOption {
+        switch payload {
+        case .detail, .comments, .unsupported:
+            .push
+        case .settings:
+            .sheet
+        }
+    }
+
+    func destination(for payload: RestorationTestRoute, router: any Router) -> some View {
+        Text("Restored \(payload.rawValue)")
+    }
+}
+
 // MARK: - Router Protocol Default Parameter Tests
 
 @Suite("Router protocol defaults")
@@ -729,6 +755,81 @@ struct BuilderFirstRouterAdapterTests {
 
         #expect(result == .unsupported(intent))
         #expect(router.screenCalls.isEmpty)
+    }
+
+    @Test("restore replays push entries in order")
+    func restoreReplaysPushEntriesInOrder() {
+        let router = DestinationCapturingRouter()
+        let resolver = RestorationTestResolver()
+        let detailIntent = RoutedNavigationIntent(payload: RestorationTestRoute.detail)
+        let commentsIntent = RoutedNavigationIntent(payload: RestorationTestRoute.comments)
+        let state = RoutingRestorationState(
+            payloadSchemaVersion: 1,
+            resolverPolicyVersion: 1,
+            entries: [
+                RoutingRestorationEntry(intent: detailIntent),
+                RoutingRestorationEntry(intent: commentsIntent)
+            ]
+        )
+
+        let result = router.restore(state, using: resolver)
+
+        #expect(result == .restored([
+            .presented(detailIntent),
+            .presented(commentsIntent)
+        ]))
+        #expect(router.screenCalls.map(\.option) == [.push, .push])
+    }
+
+    @Test("restore stops when an entry is unsupported")
+    func restoreStopsWhenEntryIsUnsupported() {
+        let router = DestinationCapturingRouter()
+        let resolver = RestorationTestResolver()
+        let detailIntent = RoutedNavigationIntent(payload: RestorationTestRoute.detail)
+        let unsupportedIntent = RoutedNavigationIntent(payload: RestorationTestRoute.unsupported)
+        let commentsIntent = RoutedNavigationIntent(payload: RestorationTestRoute.comments)
+        let state = RoutingRestorationState(
+            payloadSchemaVersion: 1,
+            resolverPolicyVersion: 1,
+            entries: [
+                RoutingRestorationEntry(intent: detailIntent),
+                RoutingRestorationEntry(intent: unsupportedIntent),
+                RoutingRestorationEntry(intent: commentsIntent)
+            ]
+        )
+
+        let result = router.restore(state, using: resolver)
+
+        #expect(result == .unsupported(
+            unsupportedIntent,
+            restored: [.presented(detailIntent)]
+        ))
+        #expect(router.screenCalls.map(\.option) == [.push])
+    }
+
+    @Test("restore rejects non-push presentation in v1.6.0")
+    func restoreRejectsNonPushPresentation() {
+        let router = DestinationCapturingRouter()
+        let resolver = RestorationTestResolver()
+        let detailIntent = RoutedNavigationIntent(payload: RestorationTestRoute.detail)
+        let settingsIntent = RoutedNavigationIntent(payload: RestorationTestRoute.settings)
+        let state = RoutingRestorationState(
+            payloadSchemaVersion: 1,
+            resolverPolicyVersion: 1,
+            entries: [
+                RoutingRestorationEntry(intent: detailIntent),
+                RoutingRestorationEntry(intent: settingsIntent)
+            ]
+        )
+
+        let result = router.restore(state, using: resolver)
+
+        #expect(result == .unsupportedPresentation(
+            settingsIntent,
+            presentation: .sheet,
+            restored: [.presented(detailIntent)]
+        ))
+        #expect(router.screenCalls.map(\.option) == [.push])
     }
 }
 
