@@ -204,6 +204,76 @@ struct RoutedNavigationIntentTests {
     }
 }
 
+// MARK: - RoutingRestorationState Tests
+
+private enum TestRestorationPayload: Codable, Hashable, Sendable {
+    case detail(id: Int)
+    case comments(id: Int)
+}
+
+@Suite("RoutingRestorationState")
+struct RoutingRestorationStateTests {
+
+    @Test("State stores version metadata and entries")
+    func storesMetadataAndEntries() {
+        let detailIntent = RoutedNavigationIntent(payload: TestRestorationPayload.detail(id: 42))
+        let state = RoutingRestorationState(
+            payloadSchemaVersion: 3,
+            resolverPolicyVersion: 7,
+            contextID: "main",
+            entries: [
+                RoutingRestorationEntry(intent: detailIntent)
+            ]
+        )
+
+        #expect(state.envelopeVersion == RoutingRestorationState<TestRestorationPayload>.currentEnvelopeVersion)
+        #expect(state.payloadSchemaVersion == 3)
+        #expect(state.resolverPolicyVersion == 7)
+        #expect(state.contextID == "main")
+        #expect(state.entries == [RoutingRestorationEntry(intent: detailIntent)])
+    }
+
+    @Test("State round-trips through JSON")
+    func jsonRoundTrip() throws {
+        let state = RoutingRestorationState(
+            payloadSchemaVersion: 1,
+            resolverPolicyVersion: 2,
+            contextID: nil,
+            entries: [
+                RoutingRestorationEntry(intent: RoutedNavigationIntent(payload: TestRestorationPayload.detail(id: 42))),
+                RoutingRestorationEntry(intent: RoutedNavigationIntent(payload: TestRestorationPayload.comments(id: 42)))
+            ]
+        )
+
+        let data = try JSONEncoder().encode(state)
+        let decoded = try JSONDecoder().decode(RoutingRestorationState<TestRestorationPayload>.self, from: data)
+
+        #expect(decoded == state)
+    }
+
+    @Test("State can decode an explicit envelope version")
+    func decodesExplicitEnvelopeVersion() throws {
+        let json = """
+        {
+          "envelopeVersion": 1,
+          "payloadSchemaVersion": 4,
+          "resolverPolicyVersion": 9,
+          "contextID": "main",
+          "entries": []
+        }
+        """
+
+        let data = try #require(json.data(using: .utf8))
+        let decoded = try JSONDecoder().decode(RoutingRestorationState<TestRestorationPayload>.self, from: data)
+
+        #expect(decoded.envelopeVersion == 1)
+        #expect(decoded.payloadSchemaVersion == 4)
+        #expect(decoded.resolverPolicyVersion == 9)
+        #expect(decoded.contextID == "main")
+        #expect(decoded.entries.isEmpty)
+    }
+}
+
 // MARK: - AlertType Tests
 
 @Suite("AlertType")

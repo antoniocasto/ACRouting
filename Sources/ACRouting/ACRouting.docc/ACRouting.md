@@ -11,7 +11,7 @@ Build predictable SwiftUI navigation flows while keeping screen assembly in your
 
 ## Current Package Version
 
-The currently documented public package release is `1.5.3`.
+The currently documented public package release is `1.6.0`.
 
 The hosted documentation at [acrouting.acasto.dev](https://acrouting.acasto.dev) is published from `main`, while this version marker reflects the latest tagged package release that includes the current public API surface.
 
@@ -41,6 +41,25 @@ The recommended integration model is builder-first:
 
 For a complete example, see <doc:BuilderFirstIntegration>.
 
+## Routing Levels
+
+`ACRouting` keeps the closure-based API first-class for immediate navigation:
+
+```swift
+router.showScreen(.push) { router in
+    DetailView(id: 42)
+}
+```
+
+That call builds a SwiftUI destination now, but it does not leave behind a serializable navigation identity. Use ``RoutedNavigationIntent`` when a route must be deep-linked, restored, migrated, or reconstructed later:
+
+```swift
+let intent = RoutedNavigationIntent(payload: AppRoute.detail(id: 42))
+router.showScreen(intent, using: AppRouteResolver(builder: builder))
+```
+
+Intent-based routing still keeps screen assembly app-owned through ``RoutedNavigationIntentResolving``. It only gives deep-link and restoration features stable app-owned data to validate, persist, and replay.
+
 ## Presentation Model
 
 `ACRouting` supports three routed presentation styles through ``SegueOption``:
@@ -66,11 +85,17 @@ For behavior details and supported limits, see <doc:PresentationSemantics>.
 
 - ``Router/showScreen(_:destination:)``
 - ``Router/showScreen(_:using:)``
+- ``Router/showScreen(_:using:restoration:)``
+- ``Router/restore(_:using:)``
 - ``Router/dismissScreen()``
+- ``Router/dismissScreen(restoration:)``
 - ``Router/dismissAncestorModal()``
 - ``Router/pop()``
 - ``Router/pop(count:)``
+- ``Router/pop(restoration:)``
+- ``Router/pop(count:restoration:)``
 - ``Router/popToRoot()``
+- ``Router/popToRoot(restoration:)``
 
 ### Alerts And Overlays
 
@@ -91,6 +116,13 @@ These types remain available as compatibility and type-erasure surfaces. Prefer 
 - ``RoutedNavigationIntent``
 - ``RoutedNavigationResolution``
 - ``RoutedNavigationIntentResolving``
+- ``RoutingRestorationStore``
+- ``UserDefaultsRoutingRestorationStore``
+- ``RoutingRestorationController``
+- ``RoutingRestorationStorageError``
+- ``RoutingRestorationState``
+- ``RoutingRestorationEntry``
+- ``RoutingRestorationResult``
 - ``View/any()``
 - ``EnvironmentValues/router``
 
@@ -98,4 +130,6 @@ These types remain available as compatibility and type-erasure surfaces. Prefer 
 
 - <doc:BuilderFirstIntegration>
 - <doc:DeepLinkInputModeling>
+- <doc:RestorationFoundation>
+- <doc:RestorationExamples>
 - <doc:PresentationSemantics>

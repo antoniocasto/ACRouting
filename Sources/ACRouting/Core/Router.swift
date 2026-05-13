@@ -229,6 +229,48 @@ public extension Router {
 
         return .presented(intent)
     }
+
+    /// Restores a single routed push stack from a versioned restoration state.
+    ///
+    /// Restoration is intentionally limited to `.push` entries in `v1.6.0`. Sheets,
+    /// full-screen covers, overlays, alerts, and cross-context restoration require a
+    /// nested envelope and are not replayed by this API.
+    ///
+    /// - Parameters:
+    ///   - state: The app-persisted restoration state to replay.
+    ///   - resolver: The app-owned resolver that validates payloads and builds destinations.
+    /// - Returns: The restoration result, including entries restored before any stop condition.
+    @discardableResult
+    func restore<Resolver>(
+        _ state: RoutingRestorationState<Resolver.Payload>,
+        using resolver: Resolver
+    ) -> RoutingRestorationResult<Resolver.Payload> where Resolver: RoutedNavigationIntentResolving {
+        var restoredResolutions: [RoutedNavigationResolution<Resolver.Payload>] = []
+
+        for entry in state.entries {
+            let intent = entry.intent
+
+            guard resolver.canResolve(intent.payload) else {
+                return .unsupported(intent, restored: restoredResolutions)
+            }
+
+            let presentation = resolver.presentation(for: intent.payload)
+            guard presentation == .push else {
+                return .unsupportedPresentation(
+                    intent,
+                    presentation: presentation,
+                    restored: restoredResolutions
+                )
+            }
+
+            showScreen(.push) { router in
+                resolver.destination(for: intent.payload, router: router)
+            }
+            restoredResolutions.append(.presented(intent))
+        }
+
+        return .restored(restoredResolutions)
+    }
 }
 
 // MARK: - Router environment injection
