@@ -13,7 +13,7 @@ out of feature views and centralize transitions behind a single `Router` API.
 
 Documentation:
 - Hosted docs: [acrouting.acasto.dev](https://acrouting.acasto.dev)
-- Current public package release: `1.5.3`
+- Current public package release: `1.6.0`
 
 ## Why ACRouting
 
@@ -49,7 +49,7 @@ Notes:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/antoniocasto/ACRouting.git", from: "1.5.3")
+    .package(url: "https://github.com/antoniocasto/ACRouting.git", from: "1.6.0")
 ],
 targets: [
     .target(
@@ -270,6 +270,28 @@ Button("Back to root") {
 - `.sheet`: presents a new modal navigation context with its own routed flow.
 - `.fullScreenCover`: presents a fullscreen modal navigation context on iOS and a sheet-backed equivalent on macOS.
 
+## Choosing A Routing Model
+
+`ACRouting` supports two complementary routing levels:
+
+- Closure-based routing is the ergonomic path for immediate, runtime-only navigation.
+- Intent-based routing is the recommended path for navigation that must be deep-linked, restored, migrated, or reconstructed later.
+
+This closure-based call remains first-class:
+
+```swift
+router.showScreen(.push) { router in
+    DetailView(id: 42)
+}
+```
+
+It does not give `ACRouting` a serializable identity for the destination, so the package cannot restore that screen after a relaunch. Use `RoutedNavigationIntent` when a route should be modeled as app-owned data:
+
+```swift
+let intent = RoutedNavigationIntent(payload: AppRoute.detail(id: 42))
+router.showScreen(intent, using: AppRouteResolver(builder: builder))
+```
+
 ## Deep-Link Input Modeling
 
 `ACRouting` can accept serializable navigation intent without taking ownership of app screen assembly. The intent stores the app-owned payload; the resolver decides whether it is supported, how to present it, and what SwiftUI destination to build.
@@ -303,6 +325,52 @@ let result = router.showScreen(intent, using: AppRouteResolver(builder: builder)
 ```
 
 Unsupported payloads return `.unsupported(intent)` and do not present a screen. Presentation style selection, URL parsing, payload decoding, and feature-module construction remain app-owned responsibilities.
+
+## Ready-To-Use Restoration
+
+`ACRouting` can persist and restore a single routed push stack from app-owned serializable navigation payloads. The ready-to-use path combines a small storage abstraction, a `UserDefaults` adapter, and a controller that tracks restorable push intents.
+
+```swift
+let store = UserDefaultsRoutingRestorationStore<AppRoute>(
+    key: "main-route-stack"
+)
+
+let restoration = RoutingRestorationController(
+    payloadSchemaVersion: 1,
+    resolverPolicyVersion: 1,
+    contextID: "main",
+    store: store
+)
+
+try router.showScreen(
+    RoutedNavigationIntent(payload: AppRoute.detail(id: 42)),
+    using: AppRouteResolver(builder: builder),
+    restoration: restoration
+)
+```
+
+When the app is ready to rebuild navigation:
+
+```swift
+let result = try restoration.restoreLoadedState(
+    on: router,
+    using: AppRouteResolver(builder: builder)
+)
+```
+
+If your app mutates the stack outside the `showScreen(_:using:restoration:)` overload, record the matching restoration mutation explicitly:
+
+```swift
+try router.pop(restoration: restoration)
+try router.dismissScreen(restoration: restoration)
+try router.popToRoot(restoration: restoration)
+```
+
+For custom persistence, implement `RoutingRestorationStore` and pass that store to `RoutingRestorationController`. The built-in `UserDefaultsRoutingRestorationStore` stores complete `RoutingRestorationState` envelopes as JSON data and throws `RoutingRestorationStorageError` for deterministic encode/decode failure categories.
+
+The first ready-to-use restoration release intentionally tracks only successful `.push` entries inside one `RouterView` context. It does not serialize `RouterView`, `AnyDestination`, closures, sheets, full-screen covers, overlays, alerts, tabs, windows, scenes, or cross-context state.
+
+Routed `.sheet` and `.fullScreenCover` flows start their own routed contexts, so future restoration support for those presentations needs a nested context envelope rather than another push entry. Overlay and alert restoration remain outside the current roadmap unless a separate design proves they need persisted state.
 
 ### Resolver Shapes
 
@@ -340,7 +408,7 @@ func destination(for payload: AppRoute, router: any Router) -> some View {
 }
 ```
 
-## Supported Modal Layering in `1.5.3`
+## Supported Modal Layering in `1.6.0`
 
 First-class supported flows:
 - Root flow with push navigation.
@@ -353,7 +421,7 @@ Current limits and out-of-scope combinations:
 - `dismissAncestorModal()` targets only the first ancestor routed `.sheet` or `.fullScreenCover`.
 - `showModal` remains an overlay API; it does not create a routed modal container and is never a dismiss target for `dismissAncestorModal()`.
 - Behavior is documented and regression-covered for one ancestor routed modal at a time.
-- Presenting one routed `.sheet` or `.fullScreenCover` from inside another routed `.sheet` or `.fullScreenCover` is not first-class in `1.5.3`.
+- Presenting one routed `.sheet` or `.fullScreenCover` from inside another routed `.sheet` or `.fullScreenCover` is not first-class in `1.6.0`.
 
 ## Alerts
 
@@ -451,6 +519,7 @@ The package now includes a debug-only preview catalog for local exploration in X
 - Scope:
   - explicit push-stack control
   - builder-first integration through an app-owned router adapter
+  - ready-to-use restoration with an in-memory preview store
   - sheet and full-screen modal roots
   - alert and overlay semantics
   - a realistic mixed checkout-style flow built only from currently supported APIs

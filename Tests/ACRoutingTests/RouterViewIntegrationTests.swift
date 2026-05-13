@@ -21,6 +21,25 @@ private struct RouterViewDeepLinkResolver: RoutedNavigationIntentResolving {
     }
 }
 
+private enum RouterViewRestorationRoute: String, Codable, Hashable, Sendable {
+    case detail
+    case comments
+}
+
+private struct RouterViewRestorationResolver: RoutedNavigationIntentResolving {
+    func canResolve(_ payload: RouterViewRestorationRoute) -> Bool {
+        true
+    }
+
+    func presentation(for payload: RouterViewRestorationRoute) -> SegueOption {
+        .push
+    }
+
+    func destination(for payload: RouterViewRestorationRoute, router: any Router) -> some View {
+        Text("Restored \(payload.rawValue)")
+    }
+}
+
 // MARK: - RouterView Integration Tests
 //
 // RouterView is both a View and a Router. Since @State properties cannot be
@@ -145,6 +164,30 @@ struct RouterViewIntegrationTests {
 
         #expect(result == .unsupported(intent))
         #expect(stackBox.stack == [sentinel])
+    }
+
+    @Test("restore mutates the active RouterView push stack")
+    func restoreMutatesActiveRouterViewPushStack() {
+        let stackBox = StackBox()
+        let router = makeChildRouter(stackBox: stackBox)
+        let detailIntent = RoutedNavigationIntent(payload: RouterViewRestorationRoute.detail)
+        let commentsIntent = RoutedNavigationIntent(payload: RouterViewRestorationRoute.comments)
+        let state = RoutingRestorationState(
+            payloadSchemaVersion: 1,
+            resolverPolicyVersion: 1,
+            entries: [
+                RoutingRestorationEntry(intent: detailIntent),
+                RoutingRestorationEntry(intent: commentsIntent)
+            ]
+        )
+
+        let result = router.restore(state, using: RouterViewRestorationResolver())
+
+        #expect(result == .restored([
+            .presented(detailIntent),
+            .presented(commentsIntent)
+        ]))
+        #expect(stackBox.stack.count == 2)
     }
 
     @Test("Independent child routers mutate only their own inherited stacks")
