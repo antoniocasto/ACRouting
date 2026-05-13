@@ -15,6 +15,8 @@ enum AppRoute: Codable, Hashable, Sendable {
 let intent = RoutedNavigationIntent(payload: AppRoute.detail(id: 42))
 ```
 
+This is the modeled routing path. The closure-based API remains appropriate for runtime-only navigation, but it cannot participate in deep links or restoration because it does not provide a stable payload that can be decoded, validated, or replayed later.
+
 Your app provides a resolver that decides whether the payload is supported, how it should be presented, and what destination to build for the routed context:
 
 ```swift
@@ -104,9 +106,11 @@ This keeps `View` and `Presenter` types out of the deep-link entry point. Builde
 ## Boundaries
 
 - `RoutedNavigationIntent` payloads must conform to `Codable`, `Hashable`, and `Sendable`.
+- Closure-built destinations remain supported for immediate navigation, but they are not deep-linkable or restorable unless the app also models them as intent payloads.
 - Presentation style selection belongs to the app-owned resolver.
 - `ACRouting` does not decode URLs directly.
 - `ACRouting` does not own a global route registry.
 - `ACRouting` restores only single-context push stacks in `v1.6.0`.
 - Restoration state stores app-owned payloads plus app-owned payload schema and resolver policy versions.
+- Restoring routed sheet and full-screen flows requires a future nested routed-context envelope because those presentations start their own routed flows.
 - Multi-root, cross-context, routed modal, alert, and overlay restoration remain future work.

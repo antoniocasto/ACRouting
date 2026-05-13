@@ -6,6 +6,8 @@ Persist, track, and restore a single routed push stack from app-owned navigation
 
 `ACRouting` restoration is built on ``RoutedNavigationIntent``. The package stores no views, builders, presenters, interactors, or type-erased destinations in the restoration envelope. Your app provides serializable route payloads and a resolver, while ``RoutingRestorationController`` keeps the current restorable push stack in sync with an app-selected ``RoutingRestorationStore``.
 
+The closure-based API remains fully supported for immediate navigation, but it is not restorable by itself. A call such as `showScreen(.push) { DetailView(id: 42) }` builds a destination now without giving `ACRouting` a stable payload to persist. Model restorable destinations as intent payloads when they need to survive relaunch.
+
 For a step-by-step integration walkthrough and catalog guidance, see <doc:RestorationExamples>.
 
 ## Configure Storage
@@ -77,3 +79,5 @@ try router.popToRoot(restoration: restoration)
 `v1.6.0` restores push entries inside one routed context. If an entry resolves to `.sheet` or `.fullScreenCover`, restoration stops and returns ``RoutingRestorationResult/unsupportedPresentation(_:presentation:restored:)``.
 
 `ACRouting` does not serialize `RouterView`, `AnyDestination`, closures, sheets, full-screen covers, overlays, alerts, tabs, windows, scenes, or cross-context state in this release.
+
+Future routed sheet or full-screen restoration needs a nested routed-context envelope: the modal presentation itself has identity, and the presented flow may also have its own push stack. Overlay and alert restoration remain separate non-goals unless a future design proves they need persisted navigation state.

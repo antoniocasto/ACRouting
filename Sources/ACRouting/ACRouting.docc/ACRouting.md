@@ -41,6 +41,25 @@ The recommended integration model is builder-first:
 
 For a complete example, see <doc:BuilderFirstIntegration>.
 
+## Routing Levels
+
+`ACRouting` keeps the closure-based API first-class for immediate navigation:
+
+```swift
+router.showScreen(.push) { router in
+    DetailView(id: 42)
+}
+```
+
+That call builds a SwiftUI destination now, but it does not leave behind a serializable navigation identity. Use ``RoutedNavigationIntent`` when a route must be deep-linked, restored, migrated, or reconstructed later:
+
+```swift
+let intent = RoutedNavigationIntent(payload: AppRoute.detail(id: 42))
+router.showScreen(intent, using: AppRouteResolver(builder: builder))
+```
+
+Intent-based routing still keeps screen assembly app-owned through ``RoutedNavigationIntentResolving``. It only gives deep-link and restoration features stable app-owned data to validate, persist, and replay.
+
 ## Presentation Model
 
 `ACRouting` supports three routed presentation styles through ``SegueOption``:

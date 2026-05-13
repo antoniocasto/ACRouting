@@ -6,6 +6,8 @@ Learn the ready-to-use restoration workflow from setup to replay.
 
 Restoration in `ACRouting` is intent-driven. Your app stores serializable payloads, and your resolver rebuilds views from those payloads when the stack is restored. The package never serializes `RouterView`, `AnyDestination`, SwiftUI views, closures, routed sheets, overlays, alerts, tabs, windows, or cross-context state.
 
+Use closure-based routing for immediate screens that do not need restoration. Use intent-based routing for destinations that need a stable app-owned identity across launches.
+
 ## Configure A Store
 
 Use ``UserDefaultsRoutingRestorationStore`` when local JSON persistence is enough:
@@ -38,6 +40,8 @@ try router.showScreen(
 ```
 
 The controller records the intent only after the resolver accepts the payload and chooses `.push`. Unsupported payloads are not saved. Payloads that resolve to `.sheet` or `.fullScreenCover` may still present, but they are transient for `v1.6.0` restoration.
+
+Routed sheet and full-screen restoration is a future design area because those presentations create a new routed context with its own possible push stack.
 
 ## Record Stack Mutations
 

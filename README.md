@@ -270,6 +270,28 @@ Button("Back to root") {
 - `.sheet`: presents a new modal navigation context with its own routed flow.
 - `.fullScreenCover`: presents a fullscreen modal navigation context on iOS and a sheet-backed equivalent on macOS.
 
+## Choosing A Routing Model
+
+`ACRouting` supports two complementary routing levels:
+
+- Closure-based routing is the ergonomic path for immediate, runtime-only navigation.
+- Intent-based routing is the recommended path for navigation that must be deep-linked, restored, migrated, or reconstructed later.
+
+This closure-based call remains first-class:
+
+```swift
+router.showScreen(.push) { router in
+    DetailView(id: 42)
+}
+```
+
+It does not give `ACRouting` a serializable identity for the destination, so the package cannot restore that screen after a relaunch. Use `RoutedNavigationIntent` when a route should be modeled as app-owned data:
+
+```swift
+let intent = RoutedNavigationIntent(payload: AppRoute.detail(id: 42))
+router.showScreen(intent, using: AppRouteResolver(builder: builder))
+```
+
 ## Deep-Link Input Modeling
 
 `ACRouting` can accept serializable navigation intent without taking ownership of app screen assembly. The intent stores the app-owned payload; the resolver decides whether it is supported, how to present it, and what SwiftUI destination to build.
@@ -347,6 +369,8 @@ try router.popToRoot(restoration: restoration)
 For custom persistence, implement `RoutingRestorationStore` and pass that store to `RoutingRestorationController`. The built-in `UserDefaultsRoutingRestorationStore` stores complete `RoutingRestorationState` envelopes as JSON data and throws `RoutingRestorationStorageError` for deterministic encode/decode failure categories.
 
 The first ready-to-use restoration release intentionally tracks only successful `.push` entries inside one `RouterView` context. It does not serialize `RouterView`, `AnyDestination`, closures, sheets, full-screen covers, overlays, alerts, tabs, windows, scenes, or cross-context state.
+
+Routed `.sheet` and `.fullScreenCover` flows start their own routed contexts, so future restoration support for those presentations needs a nested context envelope rather than another push entry. Overlay and alert restoration remain outside the current roadmap unless a separate design proves they need persisted state.
 
 ### Resolver Shapes
 

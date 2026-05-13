@@ -6,6 +6,11 @@ Make `ACRouting` a dependable SwiftUI navigation package for production apps tha
 
 Through `v1.x`, the package should keep navigation deterministic, stay additive, document the real builder-first integration model clearly, and add future deep-link or restoration support only in ways that preserve app-owned screen assembly.
 
+The long-term public model has two complementary routing levels:
+
+- Closure-based routing remains the ergonomic default for immediate, runtime-only navigation.
+- Intent-based routing is the recommended path for navigation that must be modeled, validated, deep-linked, restored, migrated, or reconstructed deterministically.
+
 ## Locked Decisions
 
 This roadmap is intended to be the default planning source for future Codex chats. Unless explicitly overridden, treat the following decisions as locked:
@@ -19,7 +24,10 @@ This roadmap is intended to be the default planning source for future Codex chat
 - The package must not require a package-owned global route-to-view registry in the core.
 - Environment injection and explicit router passing are both supported patterns.
 - Multiple independent `RouterView` contexts, such as tab roots, are first-class supported integration patterns.
+- Closure-based `showScreen` APIs remain first-class throughout `v1.x`; intent APIs add reconstructable routing instead of replacing the closure APIs.
+- Deep-link, restoration, analytics, migration, and future deterministic reconstruction features should build on serializable intent payloads rather than closure-only destinations.
 - Any future data-driven or typed navigation inputs must carry serializable navigation intent only, never concrete `View` types or module dependencies.
+- Routed sheet and full-screen restoration must be designed as nested routed-context restoration, not as a trivial extension of push-stack entries.
 - CI must validate the normal contribution path, which means pull requests targeting `develop` as well as protected release branches.
 - Restoration must not ship as a broad feature until its persisted payload envelope, schema versioning, and resolver policy versioning are documented.
 - Maintainer-only hosted documentation setup notes must not be exposed from the public repository; `docs/HostedDocumentation.md` should be removed rather than only unlinked.
@@ -29,6 +37,8 @@ This roadmap is intended to be the default planning source for future Codex chat
 - `ACRouting` owns push-stack state, routed sheet/full-screen state, overlay state, alert state, and dismissal or pop semantics.
 - The application owns screen assembly through builders, factories, or equivalent composition-root mechanisms.
 - Feature screens should usually depend on an app-owned router adapter that decides which builder method to call and then uses `ACRouting` to present the resulting screen.
+- Closure-based routing expresses "build and present this destination now"; it intentionally does not leave behind a serializable identity for future restoration.
+- Intent-based routing expresses "present this app-owned navigation intent"; resolvers keep the destination assembly app-owned while giving deep-link and restoration features a stable payload to persist or replay.
 - Future deep-link and restoration flows must rebuild navigation by asking app-owned builders or resolvers to recreate screens, not by moving assembly into `ACRouting`.
 
 ## Current Assessment
@@ -50,8 +60,10 @@ This roadmap is intended to be the default planning source for future Codex chat
 - Missing-router fallback behavior now emits debug guidance that explains how to wrap a flow in `RouterView` or pass a real router explicitly.
 - Regression coverage now includes builder-assembled push, sheet, full-screen, overlay, and independent router-context stack isolation.
 - Deep-link input modeling now stores app-owned serializable payloads and lets app-owned resolvers choose presentation style plus destination assembly.
+- Ready-to-use restoration now persists and restores intent-driven push stacks inside one routed context.
+- The public documentation now treats closure-based routing and intent-based routing as complementary levels rather than competing APIs.
 
-### Current supported behavior after `v1.5.3`
+### Current supported behavior after `v1.6.0`
 
 - Root flow with push navigation.
 - One routed `.sheet` flow with its own local push stack.
@@ -62,8 +74,11 @@ This roadmap is intended to be the default planning source for future Codex chat
 - Multiple independent `RouterView` contexts for tab roots or feature-scoped flows.
 - Serializable routed navigation intent payloads resolved through app-owned resolvers.
 - Resolver-selected presentation styles for supported typed navigation payloads.
+- Single-context push-stack restoration for app-owned serializable routed intents.
+- `UserDefaults`-backed restoration storage through a small custom-store protocol.
+- Restoration tracking helpers for restorable push, pop, dismiss, pop count, and pop-to-root operations.
 
-### Current gaps to address after `v1.5.3`
+### Current gaps to address after `v1.6.0`
 
 - Builder-first regression coverage is much stronger than before, but follow-up tests should continue locking down any small adapter or multi-context edge cases discovered during use.
 - Missing-router diagnostics are actionable, but they should stay preview-safe and avoid becoming noisy.
@@ -72,7 +87,9 @@ This roadmap is intended to be the default planning source for future Codex chat
 - `AnyView`, `AnyDestination`, and `View.any()` still limit future state serialization and reconstruction work, but any cleanup in this area must preserve builder-owned assembly.
 - Alert actions and overlay builders now have typed builder conveniences, while the underlying `AnyView` compatibility APIs remain available for existing consumers.
 - `showModal` intentionally differs from routed presentations because it evaluates and stores overlay content in the current router context; future changes should preserve that documented and tested timing.
-- Remaining reconstruction and restoration gaps are persisted payload compatibility, multi-entry deep-link stack reconstruction, and cross-context restoration across multiple `RouterView` roots.
+- Persisted payload compatibility is app-owned but needs stronger guidance around schema versions, resolver policy versions, migration, and discard behavior.
+- Restoration helper operations mutate the router before persistence completes; this non-transactional behavior should be documented and hardened where feasible.
+- Remaining reconstruction and restoration gaps are routed modal restoration, multi-entry deep-link stack reconstruction, and cross-context restoration across multiple `RouterView` roots.
 
 ## Priorities
 
@@ -131,19 +148,21 @@ Priority: High
 Why it matters:
 For a public package, ergonomics and diagnostics are part of the product surface. Better guidance reduces integration mistakes without forcing new architecture.
 
-### 5. Define Deep-Link and Restoration Boundaries Around App-Owned Builders
+### 5. Define Intent-Based Reconstruction Boundaries Around App-Owned Builders
 
 Priority: High
 
 - Keep the payload-only routed intent API additive and avoid moving screen assembly into `ACRouting`.
-- Extend the app-owned builder or resolver handoff only where it helps supported deep-link or restoration flows.
+- Treat intent-based routing as the recommended route for deep links, restoration, stack reconstruction, migration, and other features that require stable navigation identity.
+- Keep closure-based routing first-class for immediate runtime navigation that does not need persistence or reconstruction.
+- Extend the app-owned builder or resolver handoff only where it helps supported deep-link, restoration, or deterministic reconstruction flows.
 - Keep failure behavior for unsupported, partial, or invalid inputs documented and regression-covered.
-- Before shipping restoration APIs, publish a short design note that defines the persisted envelope, payload schema versioning, resolver policy versioning, unsupported payload behavior, and ownership of multiple `RouterView` roots.
-- Scope the first restoration implementation to a single routed context unless the envelope model has already proven that cross-context restoration can stay deterministic.
-- Defer cross-tab, multi-root, and multi-entry stack reconstruction until single-context restoration has behavior tests and compatibility rules.
+- Keep the `v1.6.0` restoration implementation scoped to one routed push context until the envelope model has proven compatibility rules and deterministic replay.
+- Design routed sheet and full-screen restoration separately as nested routed contexts with their own push stacks and lifecycle rules.
+- Defer cross-tab, multi-root, routed modal, and multi-entry deep-link stack reconstruction until single-context restoration has a hardening pass.
 
 Why it matters:
-Deep links and restoration are still valuable goals, but they must fit the builder-first contract instead of bypassing it.
+Deep links, restoration, and future reconstruction features are valuable only if they fit the builder-first contract instead of bypassing it. Intent routing provides that stable identity without forcing all runtime navigation into a package-owned route registry.
 
 ### 6. Reduce View-Erased Internals Only When It Helps Deterministic State
 
@@ -182,7 +201,9 @@ The following milestones should not be treated as "implement immediately" items 
 - `v1.5.0`: deep-link input modeling, builder or resolver handoff, and supported failure behavior.
 - `v1.5.2`: CI reliability, runtime-test hardening, and documentation of current overlay or API ergonomics limits before the next feature family.
 - `v1.6.0`: restoration payload envelope, compatibility rules, and a narrowly scoped single-context reconstruction boundary.
-- `v1.7.0`: optional navigation-intent helpers for app-owned routers, only if they provide value without moving assembly into the package.
+- `v1.6.x`: harden intent-driven restoration with clearer compatibility guidance, non-transactional persistence behavior, and examples for custom storage or seeded state.
+- `v1.7.0`: modeled-routing ergonomics and routed modal restoration design, including optional navigation-intent helpers for app-owned routers only if they provide value without moving assembly into the package.
+- `v1.7.x`: harden any public modeled-routing or routed-modal restoration additions before broader multi-context reconstruction.
 - `v2.0.0`: migration strategy, naming cleanup, and legacy API de-emphasis timing.
 
 ## Suggested Release Sequence
@@ -350,7 +371,7 @@ The ergonomics work is valuable, but it should stay separate from `v1.5.2` CI ha
 
 Already implemented:
 
-- A design note defines the restoration envelope, payload schema versioning, resolver policy versioning, and unsupported payload behavior.
+- Public README and DocC documentation define the restoration envelope, payload schema versioning, resolver policy versioning, and unsupported payload behavior.
 - `RoutingRestorationState` stores app-owned intent entries for one routed context.
 - `Router.restore(_:using:)` replays supported `.push` entries through app-owned resolvers and stops on unsupported or non-push entries.
 - `RoutingRestorationStore` defines the small storage boundary for complete restoration envelopes.
@@ -367,19 +388,27 @@ Restoration is only worth shipping once deep-link input and builder handoff rule
 
 - Restoration hardening patch.
 - Fix edge cases, expand regression coverage, and tighten documentation.
+- Keep this patch focused on the existing intent-driven, single-context push restoration model.
+- Clarify that closure-only `showScreen` destinations are not restorable because they do not provide a serializable navigation identity.
+- Document how apps should use `payloadSchemaVersion`, `resolverPolicyVersion`, and `contextID` to accept, migrate, or discard persisted state.
 - Validate DocC symbol links for the new restoration articles in CI or as a release checklist item.
 - Consider whether `RoutingRestorationController` should roll back its in-memory tracked stack when persistence fails after a record operation.
 - Add targeted examples or tests for apps that seed restoration state from a server or encrypted custom store.
+- Add a small compatibility guide for payload evolution and resolver policy changes.
 - Revisit preview catalog screenshots or hosted documentation examples once `v1.6.0` is promoted from draft PR to release.
 
 Why this version:
-State restoration should get one stabilization pass before more optional abstraction work is considered.
+State restoration should get one stabilization pass before routed modal restoration or broader modeled-routing conveniences are considered.
 
 ### v1.7.0
 
-- Optional navigation-intent helper release.
+- Modeled-routing ergonomics and routed modal restoration design release.
+- Treat closure-based routing and intent-based routing as two documented levels of the public API.
 - Evaluate additive helper APIs for app-owned routers or adapters if real-world integrations show enough repeated boilerplate.
 - Keep any such helpers optional, app-scoped, and compatible with builder-owned assembly.
+- Evaluate whether deep links should support stack-producing intent sequences such as category plus detail when apps need deterministic multi-entry reconstruction.
+- Design routed sheet and full-screen restoration as nested routed-context envelopes rather than as ordinary push entries.
+- Keep the first routed modal restoration design limited to supported routed `.sheet` and `.fullScreenCover` contexts; overlays and alerts stay out of scope unless a separate design proves they need restoration.
 - Do not require package-owned typed routing or global registries in the core.
 
 Needs deeper design before implementation:
@@ -387,17 +416,21 @@ Needs deeper design before implementation:
 - whether the helpers belong in the public package at all or should remain example-level patterns
 - how helper inputs stay serializable and architecture-neutral
 - how to avoid locking the package into one app architecture's naming or layering conventions
+- whether routed modal restoration should restore only the visible modal, the modal's internal push stack, or both
+- how to synchronize restoration state when a user dismisses a routed sheet with system gestures
+- how `fullScreenCover` restoration should behave on macOS where the presentation is sheet-backed
+- what happens when a persisted modal route now resolves to `.push` or becomes unsupported
 
 Why this version:
-Any data-driven navigation convenience should be proven by real integration pain before it becomes part of the public API.
+Any data-driven navigation convenience or routed modal restoration support should be proven by real integration pain before it becomes part of the public API.
 
 ### v1.7.1
 
-- Navigation-intent helper hardening patch.
+- Modeled-routing hardening patch.
 - Ship compatibility fixes, regression coverage, and documentation updates only.
 
 Why this version:
-If helpers become public, they still need their own stabilization release before cleanup work begins.
+If helpers or routed modal restoration become public, they still need their own stabilization release before broader reconstruction or cleanup work begins.
 
 ### v2.0.0
 
@@ -419,11 +452,15 @@ Breaking changes should happen only after the package has already proven an addi
 
 - `v1.4.0` is the first release allowed to add new public navigation-control APIs.
 - The current closure-based builder API remains first-class throughout `v1.x`.
+- The closure-based API is the ergonomic path for immediate navigation that does not need a serializable identity.
+- The intent-based API is the recommended path for routes that need deep linking, restoration, analytics, migration, or deterministic reconstruction.
+- Restoration should require intent payloads for every restorable screen instead of attempting to infer identity from closure-built SwiftUI views.
 - New `Router` protocol requirements in `v1.x` should keep source compatibility through default implementations.
 - Builders own screen assembly; `ACRouting` owns navigation state and transition behavior.
 - Future data-driven APIs beyond current intent modeling must hand off rendering to app-owned builders or resolvers and must carry only serializable navigation intent.
 - The package must not require a package-owned global route-to-view registry in the core.
 - Multiple independent `RouterView` contexts remain supported and should stay documented as such.
+- Routed sheet and full-screen restoration should use nested context envelopes if it is added; it should not treat modal presentation as a plain push-stack entry.
 - No roadmap item before `v2.0.0` may require removing current APIs.
 - Future presentation state can become more data-driven internally, but public integration should remain builder-friendly.
 - Public type-erasure surfaces such as `AnyDestination`, `View.any()`, and alert `AnyView` actions should be treated as compatibility debt, not as patterns to expand.
@@ -452,8 +489,12 @@ Minimum scenarios to cover explicitly:
 - Runtime-level presentation wiring for push, routed modal, alert, and overlay behavior where SwiftUI automation makes this practical.
 - `showModal` overlay builder timing and dismissal behavior.
 - `RoutedNavigationIntent` Codable round-trips and resolver-selected presentation behavior for deep-link input.
+- Documentation-level examples that show closure-based routing as non-restorable and intent-based routing as restorable.
 - Deep-link stack reconstruction round-trips once reconstruction APIs exist.
 - Single-context restoration round-trips once restoration exists.
+- Restoration storage compatibility behavior for unsupported payload versions or resolver policy changes once a compatibility helper exists.
+- Routed sheet/full-screen restoration round-trips only after nested routed-context envelopes are designed.
+- Gesture-dismiss synchronization for routed modal restoration only if routed modal restoration becomes supported.
 - Cross-context restoration round-trips only after the single-context envelope and compatibility rules are proven.
 
 ## Non-Goals for Now
@@ -461,10 +502,11 @@ Minimum scenarios to cover explicitly:
 - Moving screen assembly into `ACRouting`.
 - Requiring a package-owned global route-to-view registry in the core.
 - Forcing apps to adopt typed routing inside the package to use push, sheet, full-screen, or overlay APIs.
+- Making closure-only `showScreen` destinations restorable by serializing closures, views, `AnyDestination`, or module dependencies.
 - Raising the deployment floor only to adopt Observation in the routing core.
 - Liquid Glass work that is unrelated to routing behavior.
 - UIKit bridging unless a concrete integration need appears.
 - Rebuilding the package around a global app store before the routing core is deterministic.
 - Supporting legacy Apple platform versions below the current floor.
-- Shipping broad restoration, cross-tab restoration, or multi-root reconstruction before a persisted compatibility envelope is defined.
+- Shipping broad restoration, routed modal restoration, cross-tab restoration, or multi-root reconstruction before the nested context and persisted compatibility envelopes are defined.
 - Expanding public type-erasure requirements when additive ergonomic overloads can hide that detail from consumers.

@@ -17,6 +17,8 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 - Added restoration examples to the internal preview catalog.
 - Added a DocC restoration examples article with setup, tracking, mutation, and replay guidance.
 - Documented the `v1.6.0` ready-to-use restoration scope, app-owned persistence boundary, and unsupported routed modal/cross-context restoration cases.
+- Documented the future routing direction: closure-based routing remains first-class for runtime navigation, while intent-based routing is the recommended path for deep links, restoration, migration, and deterministic reconstruction.
+- Updated the roadmap to track `v1.6.x` restoration hardening and future routed sheet/full-screen restoration as nested routed-context design work.
 
 ## [1.5.3] - 2026-05-02
 
