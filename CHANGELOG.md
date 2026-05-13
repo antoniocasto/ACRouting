@@ -7,6 +7,8 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-05-13
+
 ### Added
 
 - Added a versioned `RoutingRestorationState` envelope for app-owned navigation payload persistence.

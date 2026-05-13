@@ -11,7 +11,7 @@ Build predictable SwiftUI navigation flows while keeping screen assembly in your
 
 ## Current Package Version
 
-The currently documented public package release is `1.5.3`.
+The currently documented public package release is `1.6.0`.
 
 The hosted documentation at [acrouting.acasto.dev](https://acrouting.acasto.dev) is published from `main`, while this version marker reflects the latest tagged package release that includes the current public API surface.
 

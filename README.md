@@ -13,7 +13,7 @@ out of feature views and centralize transitions behind a single `Router` API.
 
 Documentation:
 - Hosted docs: [acrouting.acasto.dev](https://acrouting.acasto.dev)
-- Current public package release: `1.5.3`
+- Current public package release: `1.6.0`
 
 ## Why ACRouting
 
@@ -49,7 +49,7 @@ Notes:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/antoniocasto/ACRouting.git", from: "1.5.3")
+    .package(url: "https://github.com/antoniocasto/ACRouting.git", from: "1.6.0")
 ],
 targets: [
     .target(
@@ -408,7 +408,7 @@ func destination(for payload: AppRoute, router: any Router) -> some View {
 }
 ```
 
-## Supported Modal Layering in `1.5.3`
+## Supported Modal Layering in `1.6.0`
 
 First-class supported flows:
 - Root flow with push navigation.
@@ -421,7 +421,7 @@ Current limits and out-of-scope combinations:
 - `dismissAncestorModal()` targets only the first ancestor routed `.sheet` or `.fullScreenCover`.
 - `showModal` remains an overlay API; it does not create a routed modal container and is never a dismiss target for `dismissAncestorModal()`.
 - Behavior is documented and regression-covered for one ancestor routed modal at a time.
-- Presenting one routed `.sheet` or `.fullScreenCover` from inside another routed `.sheet` or `.fullScreenCover` is not first-class in `1.5.3`.
+- Presenting one routed `.sheet` or `.fullScreenCover` from inside another routed `.sheet` or `.fullScreenCover` is not first-class in `1.6.0`.
 
 ## Alerts
 
