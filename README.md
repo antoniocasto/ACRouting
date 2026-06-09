@@ -13,7 +13,7 @@ out of feature views and centralize transitions behind a single `Router` API.
 
 Documentation:
 - Hosted docs: [acrouting.acasto.dev](https://acrouting.acasto.dev)
-- Current public package release: `1.6.0`
+- Current public package release: `1.6.1`
 
 ## Why ACRouting
 
@@ -49,7 +49,7 @@ Notes:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/antoniocasto/ACRouting.git", from: "1.6.0")
+    .package(url: "https://github.com/antoniocasto/ACRouting.git", from: "1.6.1")
 ],
 targets: [
     .target(
@@ -368,6 +368,59 @@ try router.popToRoot(restoration: restoration)
 
 For custom persistence, implement `RoutingRestorationStore` and pass that store to `RoutingRestorationController`. The built-in `UserDefaultsRoutingRestorationStore` stores complete `RoutingRestorationState` envelopes as JSON data and throws `RoutingRestorationStorageError` for deterministic encode/decode failure categories.
 
+Use the version metadata as an app-owned compatibility boundary:
+
+```swift
+let restoration = RoutingRestorationController(
+    payloadSchemaVersion: AppRoute.currentSchemaVersion,
+    resolverPolicyVersion: AppRouteResolver.currentPolicyVersion,
+    contextID: "main-tab",
+    store: store
+)
+```
+
+Before replaying a loaded state, your app can inspect the envelope and decide whether to accept, migrate, or discard it:
+
+```swift
+if let state = try restoration.loadState(),
+   state.payloadSchemaVersion == AppRoute.currentSchemaVersion,
+   state.resolverPolicyVersion == AppRouteResolver.currentPolicyVersion,
+   state.contextID == "main-tab" {
+    _ = try router.restore(state, using: AppRouteResolver(builder: builder))
+} else {
+    try restoration.clear()
+}
+```
+
+Custom stores can seed state from files, encrypted storage, or server-provided routes as long as they load and save complete `RoutingRestorationState` envelopes:
+
+```swift
+final class SeededRestorationStore<Payload>: RoutingRestorationStore
+where Payload: Codable & Hashable & Sendable {
+    private var state: RoutingRestorationState<Payload>?
+
+    init(seed: RoutingRestorationState<Payload>? = nil) {
+        state = seed
+    }
+
+    func load() throws -> RoutingRestorationState<Payload>? {
+        state
+    }
+
+    func save(_ state: RoutingRestorationState<Payload>) throws {
+        self.state = state
+        // Persist the full envelope to the app-owned backing store.
+    }
+
+    func clear() throws {
+        state = nil
+        // Remove the app-owned persisted envelope.
+    }
+}
+```
+
+`RoutingRestorationController` rolls back its tracked in-memory intent stack if persistence fails after a record, restore, or clear operation. Router navigation remains non-transactional: if `showScreen(_:using:restoration:)` schedules a push and the store then throws, the error is propagated and the controller rolls back its tracked state, but the visible navigation is not automatically reversed.
+
 The first ready-to-use restoration release intentionally tracks only successful `.push` entries inside one `RouterView` context. It does not serialize `RouterView`, `AnyDestination`, closures, sheets, full-screen covers, overlays, alerts, tabs, windows, scenes, or cross-context state.
 
 Routed `.sheet` and `.fullScreenCover` flows start their own routed contexts, so future restoration support for those presentations needs a nested context envelope rather than another push entry. Overlay and alert restoration remain outside the current roadmap unless a separate design proves they need persisted state.
@@ -408,7 +461,7 @@ func destination(for payload: AppRoute, router: any Router) -> some View {
 }
 ```
 
-## Supported Modal Layering in `1.6.0`
+## Supported Modal Layering in `1.6.1`
 
 First-class supported flows:
 - Root flow with push navigation.
@@ -421,7 +474,7 @@ Current limits and out-of-scope combinations:
 - `dismissAncestorModal()` targets only the first ancestor routed `.sheet` or `.fullScreenCover`.
 - `showModal` remains an overlay API; it does not create a routed modal container and is never a dismiss target for `dismissAncestorModal()`.
 - Behavior is documented and regression-covered for one ancestor routed modal at a time.
-- Presenting one routed `.sheet` or `.fullScreenCover` from inside another routed `.sheet` or `.fullScreenCover` is not first-class in `1.6.0`.
+- Presenting one routed `.sheet` or `.fullScreenCover` from inside another routed `.sheet` or `.fullScreenCover` is not first-class in `1.6.1`.
 
 ## Alerts
 

@@ -8,7 +8,7 @@ Persist, track, and restore a single routed push stack from app-owned navigation
 
 The closure-based API remains fully supported for immediate navigation, but it is not restorable by itself. A call such as `showScreen(.push) { DetailView(id: 42) }` builds a destination now without giving `ACRouting` a stable payload to persist. Model restorable destinations as intent payloads when they need to survive relaunch.
 
-For a step-by-step integration walkthrough and catalog guidance, see <doc:RestorationExamples>.
+For a step-by-step integration walkthrough and catalog guidance, see <doc:RestorationExamples>. For payload evolution, resolver policy changes, seeded state, and discard behavior, see <doc:RestorationCompatibility>.
 
 ## Configure Storage
 
@@ -50,6 +50,8 @@ let result = try restoration.restoreLoadedState(
 
 If restoration stops on an unsupported payload or non-push presentation, the controller synchronizes its tracked stack to only the entries that were actually restored.
 
+If persistence fails after this synchronization, ``RoutingRestorationController`` rolls its tracked stack back to the last in-memory value and rethrows the storage error. Already scheduled router navigation is not automatically reversed.
+
 ## Record Explicit Mutations
 
 When code uses non-restorable router commands directly, record the matching stack change:
@@ -73,6 +75,8 @@ try router.pop(count: 2, restoration: restoration)
 try router.dismissScreen(restoration: restoration)
 try router.popToRoot(restoration: restoration)
 ```
+
+If the store throws while one of these record operations persists the new envelope, the controller restores its previous tracked intent stack before rethrowing. The router command itself remains non-transactional: a visible pop or push that has already been scheduled is not undone by `ACRouting`.
 
 ## Scope
 

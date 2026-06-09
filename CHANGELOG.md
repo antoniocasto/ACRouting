@@ -7,6 +7,18 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.6.1] - 2026-06-09
+
+### Added
+
+- Added regression coverage for restoration rollback when `save()` or `clear()` fails after a tracked stack mutation.
+- Added restoration compatibility guidance for `payloadSchemaVersion`, `resolverPolicyVersion`, `contextID`, seeded state, and custom store behavior.
+
+### Fixed
+
+- `RoutingRestorationController` now rolls back its in-memory tracked intent stack when persistence fails after record, restore, or clear operations.
+- Restorable router helpers still propagate persistence errors after scheduling router navigation, while the controller state now remains aligned with the last successful persistence boundary.
+
 ## [1.6.0] - 2026-05-13
 
 ### Added
