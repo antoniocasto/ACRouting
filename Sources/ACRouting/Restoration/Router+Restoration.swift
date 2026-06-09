@@ -4,8 +4,10 @@ public extension Router {
     /// Presents a routed intent and records it for restoration only when it resolves to `.push`.
     ///
     /// Persistence errors are thrown after the router has scheduled a supported push
-    /// presentation. Non-push presentations remain transient and are not tracked in
-    /// the current restoration scope.
+    /// presentation. The restoration controller rolls back its tracked stack on
+    /// persistence failure, but visible navigation is not automatically reversed.
+    /// Non-push presentations remain transient and are not tracked in the current
+    /// restoration scope.
     @discardableResult
     func showScreen<Resolver>(
         _ intent: RoutedNavigationIntent<Resolver.Payload>,
