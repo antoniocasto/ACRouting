@@ -63,7 +63,7 @@ This roadmap is intended to be the default planning source for future Codex chat
 - Ready-to-use restoration now persists and restores intent-driven push stacks inside one routed context.
 - The public documentation now treats closure-based routing and intent-based routing as complementary levels rather than competing APIs.
 
-### Current supported behavior after `v1.6.0`
+### Current supported behavior after `v1.6.1`
 
 - Root flow with push navigation.
 - One routed `.sheet` flow with its own local push stack.
@@ -77,8 +77,9 @@ This roadmap is intended to be the default planning source for future Codex chat
 - Single-context push-stack restoration for app-owned serializable routed intents.
 - `UserDefaults`-backed restoration storage through a small custom-store protocol.
 - Restoration tracking helpers for restorable push, pop, dismiss, pop count, and pop-to-root operations.
+- Restoration controller rollback for tracked in-memory intents when persistence fails after record, restore, or clear operations.
 
-### Current gaps to address after `v1.6.0`
+### Current gaps to address after `v1.6.1`
 
 - Builder-first regression coverage is much stronger than before, but follow-up tests should continue locking down any small adapter or multi-context edge cases discovered during use.
 - Missing-router diagnostics are actionable, but they should stay preview-safe and avoid becoming noisy.
@@ -87,8 +88,8 @@ This roadmap is intended to be the default planning source for future Codex chat
 - `AnyView`, `AnyDestination`, and `View.any()` still limit future state serialization and reconstruction work, but any cleanup in this area must preserve builder-owned assembly.
 - Alert actions and overlay builders now have typed builder conveniences, while the underlying `AnyView` compatibility APIs remain available for existing consumers.
 - `showModal` intentionally differs from routed presentations because it evaluates and stores overlay content in the current router context; future changes should preserve that documented and tested timing.
-- Persisted payload compatibility is app-owned but needs stronger guidance around schema versions, resolver policy versions, migration, and discard behavior.
-- Restoration helper operations mutate the router before persistence completes; this non-transactional behavior should be documented and hardened where feasible.
+- Persisted payload compatibility is app-owned and now has explicit guidance, but real-world migrations should continue shaping examples and tests.
+- Restoration helper operations mutate the router before persistence completes; the controller now rolls back tracked in-memory intents when persistence fails, but visible router navigation remains intentionally non-transactional.
 - Remaining reconstruction and restoration gaps are routed modal restoration, multi-entry deep-link stack reconstruction, and cross-context restoration across multiple `RouterView` roots.
 
 ## Priorities
@@ -157,9 +158,9 @@ Priority: High
 - Keep closure-based routing first-class for immediate runtime navigation that does not need persistence or reconstruction.
 - Extend the app-owned builder or resolver handoff only where it helps supported deep-link, restoration, or deterministic reconstruction flows.
 - Keep failure behavior for unsupported, partial, or invalid inputs documented and regression-covered.
-- Keep the `v1.6.0` restoration implementation scoped to one routed push context until the envelope model has proven compatibility rules and deterministic replay.
+- Keep restoration scoped to one routed push context until the envelope model, compatibility guidance, and persistence-failure hardening have enough real-world feedback.
 - Design routed sheet and full-screen restoration separately as nested routed contexts with their own push stacks and lifecycle rules.
-- Defer cross-tab, multi-root, routed modal, and multi-entry deep-link stack reconstruction until single-context restoration has a hardening pass.
+- Defer cross-tab, multi-root, routed modal, and multi-entry deep-link stack reconstruction until single-context restoration hardening has enough real integration feedback.
 
 Why it matters:
 Deep links, restoration, and future reconstruction features are valuable only if they fit the builder-first contract instead of bypassing it. Intent routing provides that stable identity without forcing all runtime navigation into a package-owned route registry.
@@ -201,7 +202,8 @@ The following milestones should not be treated as "implement immediately" items 
 - `v1.5.0`: deep-link input modeling, builder or resolver handoff, and supported failure behavior.
 - `v1.5.2`: CI reliability, runtime-test hardening, and documentation of current overlay or API ergonomics limits before the next feature family.
 - `v1.6.0`: restoration payload envelope, compatibility rules, and a narrowly scoped single-context reconstruction boundary.
-- `v1.6.x`: harden intent-driven restoration with clearer compatibility guidance, non-transactional persistence behavior, and examples for custom storage or seeded state.
+- `v1.6.1`: harden intent-driven restoration with tracked-stack rollback on persistence failure, clearer compatibility guidance, non-transactional navigation documentation, and examples for custom storage or seeded state.
+- `v1.6.x`: continue focused restoration hardening only where real integration feedback exposes patch-level gaps.
 - `v1.7.0`: modeled-routing ergonomics and routed modal restoration design, including optional navigation-intent helpers for app-owned routers only if they provide value without moving assembly into the package.
 - `v1.7.x`: harden any public modeled-routing or routed-modal restoration additions before broader multi-context reconstruction.
 - `v2.0.0`: migration strategy, naming cleanup, and legacy API de-emphasis timing.
@@ -386,16 +388,14 @@ Restoration is only worth shipping once deep-link input and builder handoff rule
 
 ### v1.6.1
 
-- Restoration hardening patch.
-- Fix edge cases, expand regression coverage, and tighten documentation.
-- Keep this patch focused on the existing intent-driven, single-context push restoration model.
-- Clarify that closure-only `showScreen` destinations are not restorable because they do not provide a serializable navigation identity.
-- Document how apps should use `payloadSchemaVersion`, `resolverPolicyVersion`, and `contextID` to accept, migrate, or discard persisted state.
-- Validate DocC symbol links for the new restoration articles in CI or as a release checklist item.
-- Consider whether `RoutingRestorationController` should roll back its in-memory tracked stack when persistence fails after a record operation.
-- Add targeted examples or tests for apps that seed restoration state from a server or encrypted custom store.
-- Add a small compatibility guide for payload evolution and resolver policy changes.
-- Revisit preview catalog screenshots or hosted documentation examples once `v1.6.0` is promoted from draft PR to release.
+- Restoration hardening patch focused on the existing intent-driven, single-context push restoration model.
+- `RoutingRestorationController` rolls back its in-memory tracked stack when persistence fails after record, restore, or clear operations.
+- Regression coverage locks down rollback behavior for push recording, pop recording, pop-to-root recording, restoration replay synchronization, and clearing.
+- Documentation clarifies that closure-only `showScreen` destinations are not restorable because they do not provide a serializable navigation identity.
+- Documentation explains how apps should use `payloadSchemaVersion`, `resolverPolicyVersion`, and `contextID` to accept, migrate, or discard persisted state.
+- A compatibility guide covers payload evolution, resolver policy changes, context identity, seeded state, custom stores, and persistence failure behavior.
+- Examples show a custom seedable restoration store for tests, encrypted stores, server-seeded state, or app-owned persistence adapters.
+- Router navigation remains non-transactional: if a router command has already scheduled visible navigation, controller rollback does not automatically reverse that UI change.
 
 Why this version:
 State restoration should get one stabilization pass before routed modal restoration or broader modeled-routing conveniences are considered.

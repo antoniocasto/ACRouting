@@ -25,7 +25,32 @@ let restoration = RoutingRestorationController(
 )
 ```
 
-Use a custom ``RoutingRestorationStore`` when you need files, SwiftData, Core Data, Keychain, CloudKit, encryption, or server sync.
+Use a custom ``RoutingRestorationStore`` when you need files, SwiftData, Core Data, Keychain, CloudKit, encryption, or server sync:
+
+```swift
+final class SeededRouteStore<Payload>: RoutingRestorationStore
+where Payload: Codable & Hashable & Sendable {
+    private var state: RoutingRestorationState<Payload>?
+
+    init(seed: RoutingRestorationState<Payload>? = nil) {
+        state = seed
+    }
+
+    func load() throws -> RoutingRestorationState<Payload>? {
+        state
+    }
+
+    func save(_ state: RoutingRestorationState<Payload>) throws {
+        self.state = state
+    }
+
+    func clear() throws {
+        state = nil
+    }
+}
+```
+
+This shape is useful for tests, encrypted stores that hydrate on launch, or apps that seed an initial route from a server response before local persistence takes over.
 
 ## Present A Restorable Push
 
@@ -76,6 +101,10 @@ let result = try restoration.restoreLoadedState(
 ```
 
 If restoration stops early because a payload is unsupported or resolves to a non-push presentation, the controller synchronizes itself to the entries that were actually restored.
+
+If the follow-up save fails, the controller restores its previous tracked intents and rethrows. The router pushes that already happened during replay remain visible, so app code should treat restoration persistence as a state-tracking boundary rather than a UI transaction.
+
+For versioning and discard decisions, see <doc:RestorationCompatibility>.
 
 ## Preview Catalog
 

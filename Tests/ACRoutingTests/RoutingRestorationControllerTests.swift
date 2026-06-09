@@ -9,6 +9,11 @@ private enum ControllerTestRoute: String, Codable, Hashable, Sendable {
     case unsupported
 }
 
+private enum ControllerTestError: Error, Equatable {
+    case saveFailed
+    case clearFailed
+}
+
 private struct ControllerTestResolver: RoutedNavigationIntentResolving {
     func canResolve(_ payload: ControllerTestRoute) -> Bool {
         payload != .unsupported
@@ -50,6 +55,37 @@ where Payload: Codable & Hashable & Sendable {
     func clear() throws {
         state = nil
         clearCallCount += 1
+    }
+}
+
+private final class FailingRoutingRestorationStore<Payload>: RoutingRestorationStore
+where Payload: Codable & Hashable & Sendable {
+    var state: RoutingRestorationState<Payload>?
+    var saveError: ControllerTestError?
+    var clearError: ControllerTestError?
+
+    init(state: RoutingRestorationState<Payload>? = nil) {
+        self.state = state
+    }
+
+    func load() throws -> RoutingRestorationState<Payload>? {
+        state
+    }
+
+    func save(_ state: RoutingRestorationState<Payload>) throws {
+        if let saveError {
+            throw saveError
+        }
+
+        self.state = state
+    }
+
+    func clear() throws {
+        if let clearError {
+            throw clearError
+        }
+
+        state = nil
     }
 }
 
@@ -142,6 +178,112 @@ struct RoutingRestorationControllerTests {
         #expect(store.clearCallCount == 1)
     }
 
+    @Test("recordPush rolls back tracked intents when persistence fails")
+    func recordPushRollsBackTrackedIntentsWhenPersistenceFails() throws {
+        let store = FailingRoutingRestorationStore<ControllerTestRoute>()
+        let controller = makeController(store: store)
+        let intent = RoutedNavigationIntent(payload: ControllerTestRoute.detail)
+        store.saveError = .saveFailed
+
+        do {
+            try controller.recordPush(intent)
+            Issue.record("Expected save failure to be propagated")
+        } catch let error as ControllerTestError {
+            #expect(error == .saveFailed)
+        }
+
+        #expect(controller.trackedIntents.isEmpty)
+        #expect(store.state == nil)
+    }
+
+    @Test("recordPop rolls back tracked intents when persistence fails")
+    func recordPopRollsBackTrackedIntentsWhenPersistenceFails() throws {
+        let store = FailingRoutingRestorationStore<ControllerTestRoute>()
+        let controller = makeController(store: store)
+        let detailIntent = RoutedNavigationIntent(payload: ControllerTestRoute.detail)
+        let commentsIntent = RoutedNavigationIntent(payload: ControllerTestRoute.comments)
+
+        try controller.recordPush(detailIntent)
+        try controller.recordPush(commentsIntent)
+        store.saveError = .saveFailed
+
+        do {
+            try controller.recordPop()
+            Issue.record("Expected save failure to be propagated")
+        } catch let error as ControllerTestError {
+            #expect(error == .saveFailed)
+        }
+
+        #expect(controller.trackedIntents == [detailIntent, commentsIntent])
+        #expect(store.state?.entries.map(\.intent) == [detailIntent, commentsIntent])
+    }
+
+    @Test("recordPopToRoot rolls back tracked intents when persistence fails")
+    func recordPopToRootRollsBackTrackedIntentsWhenPersistenceFails() throws {
+        let store = FailingRoutingRestorationStore<ControllerTestRoute>()
+        let controller = makeController(store: store)
+        let detailIntent = RoutedNavigationIntent(payload: ControllerTestRoute.detail)
+        let commentsIntent = RoutedNavigationIntent(payload: ControllerTestRoute.comments)
+
+        try controller.recordPush(detailIntent)
+        try controller.recordPush(commentsIntent)
+        store.saveError = .saveFailed
+
+        do {
+            try controller.recordPopToRoot()
+            Issue.record("Expected save failure to be propagated")
+        } catch let error as ControllerTestError {
+            #expect(error == .saveFailed)
+        }
+
+        #expect(controller.trackedIntents == [detailIntent, commentsIntent])
+        #expect(store.state?.entries.map(\.intent) == [detailIntent, commentsIntent])
+    }
+
+    @Test("restoreLoadedState rolls back tracked intents when persistence fails")
+    func restoreLoadedStateRollsBackTrackedIntentsWhenPersistenceFails() throws {
+        let store = FailingRoutingRestorationStore<ControllerTestRoute>()
+        let controller = makeController(store: store)
+        let router = ControllerSpyRouter()
+        let previousIntent = RoutedNavigationIntent(payload: ControllerTestRoute.settings)
+        let restoredIntent = RoutedNavigationIntent(payload: ControllerTestRoute.detail)
+
+        try controller.recordPush(previousIntent)
+        store.state = makeState(intents: [restoredIntent])
+        store.saveError = .saveFailed
+
+        do {
+            _ = try controller.restoreLoadedState(on: router, using: ControllerTestResolver())
+            Issue.record("Expected save failure to be propagated")
+        } catch let error as ControllerTestError {
+            #expect(error == .saveFailed)
+        }
+
+        #expect(router.showScreenCalls == [.push])
+        #expect(controller.trackedIntents == [previousIntent])
+        #expect(store.state?.entries.map(\.intent) == [restoredIntent])
+    }
+
+    @Test("clear rolls back tracked intents when store clearing fails")
+    func clearRollsBackTrackedIntentsWhenStoreClearingFails() throws {
+        let store = FailingRoutingRestorationStore<ControllerTestRoute>()
+        let controller = makeController(store: store)
+        let intent = RoutedNavigationIntent(payload: ControllerTestRoute.detail)
+
+        try controller.recordPush(intent)
+        store.clearError = .clearFailed
+
+        do {
+            try controller.clear()
+            Issue.record("Expected clear failure to be propagated")
+        } catch let error as ControllerTestError {
+            #expect(error == .clearFailed)
+        }
+
+        #expect(controller.trackedIntents == [intent])
+        #expect(store.state?.entries.map(\.intent) == [intent])
+    }
+
     @Test("restoreLoadedState loads state, replays router pushes, and synchronizes restored intents")
     func restoreLoadedStateSynchronizesRestoredIntents() throws {
         let detailIntent = RoutedNavigationIntent(payload: ControllerTestRoute.detail)
@@ -219,6 +361,17 @@ struct RoutingRestorationControllerTests {
 
     private func makeController(
         store: RecordingRoutingRestorationStore<ControllerTestRoute>
+    ) -> RoutingRestorationController<ControllerTestRoute> {
+        RoutingRestorationController(
+            payloadSchemaVersion: 3,
+            resolverPolicyVersion: 7,
+            contextID: "main",
+            store: store
+        )
+    }
+
+    private func makeController(
+        store: FailingRoutingRestorationStore<ControllerTestRoute>
     ) -> RoutingRestorationController<ControllerTestRoute> {
         RoutingRestorationController(
             payloadSchemaVersion: 3,
